@@ -1,4 +1,4 @@
-import '../firebaseConfig'; // Import Firebase config to initialize Firebase
+import '../firebaseConfig'; // Import to initialize Firebase - ADJUST PATH AS NEEDED
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { CartProvider } from '@/contexts/CartContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -34,12 +35,14 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  // Do not return null if Firebase hasn't initialized if your init is async in firebaseConfig.ts
+  // However, for @react-native-firebase, native config usually handles this.
   if (!loaded && !error) { 
     return null;
   }
   
   return (
-    <AuthProvider> {/* Wrap with AuthProvider */}
+    <AuthProvider>
       <CartProvider> 
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
