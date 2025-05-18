@@ -1,3 +1,17 @@
+import firebase from '@react-native-firebase/app';
+
+// Defensive check
+if (!firebase.apps.length) {
+  console.warn("[AuthContext] Firebase still not initialized at the start of AuthContext. Attempting to initialize again.");
+  try {
+    firebase.initializeApp(); // Attempt to initialize if not already done
+    console.log("[AuthContext] Firebase initialized from within AuthContext.");
+  } catch (e) {
+    console.error("[AuthContext] Error initializing Firebase from within AuthContext:", e);
+    // Potentially throw an error here or set a state that prevents app usage
+  }
+}
+
 import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
