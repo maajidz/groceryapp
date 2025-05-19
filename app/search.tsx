@@ -3,7 +3,7 @@ import { StyleSheet, View, TextInput, FlatList, TouchableOpacity, Image, Keyboar
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, Link } from 'expo-router'; // Import Link
 import { useCart } from '@/contexts/CartContext'; 
 
 const allProducts = [
@@ -80,32 +80,34 @@ export default function SearchScreen() {
     const quantityInCart = cartItem ? cartItem.quantity : 0;
 
     return (
-    <View style={styles.productResultItem}>
-        <Image source={{ uri: item.image }} style={styles.productResultImage} resizeMode="contain" />
-        <View style={styles.productResultInfo}>
-            <ThemedText style={styles.productResultName} numberOfLines={2}>{item.name}</ThemedText>
-            <ThemedText style={styles.productResultWeight}>{item.weight}</ThemedText>
-            <View style={styles.productResultPriceRow}>
-                <ThemedText style={styles.productResultPrice}>{item.price}</ThemedText>
-                {item.oldPrice && <ThemedText style={styles.productResultOldPrice}>{item.oldPrice}</ThemedText>}
+      <Link href={{ pathname: "/products/[id]", params: { id: item.id } }} asChild>
+        <TouchableOpacity style={styles.productResultItem}>
+            <Image source={{ uri: item.image }} style={styles.productResultImage} resizeMode="contain" />
+            <View style={styles.productResultInfo}>
+                <ThemedText style={styles.productResultName} numberOfLines={2}>{item.name}</ThemedText>
+                <ThemedText style={styles.productResultWeight}>{item.weight}</ThemedText>
+                <View style={styles.productResultPriceRow}>
+                    <ThemedText style={styles.productResultPrice}>{item.price}</ThemedText>
+                    {item.oldPrice && <ThemedText style={styles.productResultOldPrice}>{item.oldPrice}</ThemedText>}
+                </View>
             </View>
-        </View>
-        {quantityInCart > 0 ? (
-            <View style={styles.quantityControlContainer}>
-                 <TouchableOpacity onPress={() => updateItemQuantity(item.id, quantityInCart - 1)} style={styles.quantityButton}>
-                    <Ionicons name="remove" size={16} color="#00A877" />
+            {quantityInCart > 0 ? (
+                <View style={styles.quantityControlContainer}>
+                    <TouchableOpacity onPress={() => updateItemQuantity(item.id, quantityInCart - 1)} style={styles.quantityButton}>
+                        <Ionicons name="remove" size={16} color="#00A877" />
+                    </TouchableOpacity>
+                    <ThemedText style={styles.quantityText}>{quantityInCart}</ThemedText>
+                    <TouchableOpacity onPress={() => addItemToCart(item)} style={styles.quantityButton}>
+                        <Ionicons name="add" size={16} color="#00A877" />
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <TouchableOpacity style={styles.productResultAddButton} onPress={() => addItemToCart(item)}>
+                    <ThemedText style={styles.productResultAddButtonText}>ADD</ThemedText>
                 </TouchableOpacity>
-                <ThemedText style={styles.quantityText}>{quantityInCart}</ThemedText>
-                <TouchableOpacity onPress={() => addItemToCart(item)} style={styles.quantityButton}>
-                    <Ionicons name="add" size={16} color="#00A877" />
-                </TouchableOpacity>
-            </View>
-        ) : (
-            <TouchableOpacity style={styles.productResultAddButton} onPress={() => addItemToCart(item)}>
-                <ThemedText style={styles.productResultAddButtonText}>ADD</ThemedText>
-            </TouchableOpacity>
-        )}
-    </View>
+            )}
+        </TouchableOpacity>
+      </Link>
   )};
 
   const showInitialState = searchQuery.length === 0;

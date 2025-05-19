@@ -2,7 +2,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useCart } from '@/contexts/CartContext'; // Import useCart
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, Link } from 'expo-router'; // Import Link
 import React, { useMemo } from 'react'; // Removed useState for cart
 import { FlatList, Image, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -52,51 +52,53 @@ export default function HomeScreen() {
     const quantityInCart = cartItem ? cartItem.quantity : 0;
 
     return (
-      <TouchableOpacity style={styles.productItemContainer}>
-        <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="contain" />
-        {item.discount && (
-          <View style={styles.discountBadge}>
-            <ThemedText style={styles.discountText}>{item.discount}</ThemedText>
-          </View>
-        )}
-        <View style={styles.deliveryTimeContainer}>
-          <Ionicons name="timer-outline" size={14} color="#4A4A4A" />
-          <ThemedText style={styles.deliveryTimeText}>{item.deliveryTime}</ThemedText>
-        </View>
-        <ThemedText style={styles.productName} numberOfLines={2}>{item.name}</ThemedText>
-        <ThemedText style={styles.productWeight}>{item.weight}</ThemedText>
-        
-        <View style={[
-          styles.productBottomContainer,
-          quantityInCart > 0 && styles.productBottomContainerColumn
-        ]}>
-          <View style={[
-            styles.productPricingInfoContainerBase,
-            quantityInCart === 0 && styles.productPricingInfoContainerRowMode
-          ]}> 
-            <ThemedText style={styles.productPrice}>{item.price}</ThemedText>
-            {item.oldPrice && <ThemedText style={styles.productOldPrice}>{item.oldPrice}</ThemedText>}
-          </View>
-          {quantityInCart > 0 ? (
-            <View style={[
-              styles.quantityControlContainer,
-              quantityInCart > 0 && styles.quantityControlContainerColumnMode
-            ]}>
-              <TouchableOpacity onPress={() => decrementItemFromCart(item)} style={styles.quantityButton}>
-                <Ionicons name="remove" size={16} color="#00A877" />
-              </TouchableOpacity>
-              <ThemedText style={styles.quantityText}>{quantityInCart}</ThemedText>
-              <TouchableOpacity onPress={() => addItemToCart(item)} style={styles.quantityButton}>
-                <Ionicons name="add" size={16} color="#00A877" />
-              </TouchableOpacity>
+      <Link href={{ pathname: "/products/[id]", params: { id: item.id } }} asChild>
+        <TouchableOpacity style={styles.productItemContainer}>
+          <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="contain" />
+          {item.discount && (
+            <View style={styles.discountBadge}>
+              <ThemedText style={styles.discountText}>{item.discount}</ThemedText>
             </View>
-          ) : (
-            <TouchableOpacity style={styles.addButton} onPress={() => addItemToCart(item)}>
-              <ThemedText style={styles.addButtonText}>ADD</ThemedText>
-            </TouchableOpacity>
           )}
-        </View>
-      </TouchableOpacity>
+          <View style={styles.deliveryTimeContainer}>
+            <Ionicons name="timer-outline" size={14} color="#4A4A4A" />
+            <ThemedText style={styles.deliveryTimeText}>{item.deliveryTime}</ThemedText>
+          </View>
+          <ThemedText style={styles.productName} numberOfLines={2}>{item.name}</ThemedText>
+          <ThemedText style={styles.productWeight}>{item.weight}</ThemedText>
+          
+          <View style={[
+            styles.productBottomContainer,
+            quantityInCart > 0 && styles.productBottomContainerColumn
+          ]}>
+            <View style={[
+              styles.productPricingInfoContainerBase,
+              quantityInCart === 0 && styles.productPricingInfoContainerRowMode
+            ]}> 
+              <ThemedText style={styles.productPrice}>{item.price}</ThemedText>
+              {item.oldPrice && <ThemedText style={styles.productOldPrice}>{item.oldPrice}</ThemedText>}
+            </View>
+            {quantityInCart > 0 ? (
+              <View style={[
+                styles.quantityControlContainer,
+                quantityInCart > 0 && styles.quantityControlContainerColumnMode
+              ]}>
+                <TouchableOpacity onPress={() => decrementItemFromCart(item)} style={styles.quantityButton}>
+                  <Ionicons name="remove" size={16} color="#00A877" />
+                </TouchableOpacity>
+                <ThemedText style={styles.quantityText}>{quantityInCart}</ThemedText>
+                <TouchableOpacity onPress={() => addItemToCart(item)} style={styles.quantityButton}>
+                  <Ionicons name="add" size={16} color="#00A877" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.addButton} onPress={() => addItemToCart(item)}>
+                <ThemedText style={styles.addButtonText}>ADD</ThemedText>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Link>
     );
   };
 
