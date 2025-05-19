@@ -22,7 +22,7 @@ interface CartContextType {
   decrementItemFromCart: (product: Product) => void;
   removeItemFromCart: (productId: string) => void;
   updateItemQuantity: (productId: string, quantity: number) => void;
-  getItemQuantity: (productId: string) => number; // Added this line
+  getItemQuantity: (productId: string) => number;
   clearCart: () => void;
   totalCartItems: number;
   totalCartPrice: number;
@@ -77,7 +77,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  // Added this function implementation
   const getItemQuantity = (productId: string): number => {
     const item = cart.find(cartItem => cartItem.id === productId);
     return item ? item.quantity : 0;
@@ -113,10 +112,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       cart, 
       setCart, 
       addItemToCart, 
+      decrementItemFromCart, // Added this line
       removeItemFromCart, 
       updateItemQuantity, 
-      getItemQuantity, // Added this line
-      clearCart, 
+      getItemQuantity, 
+      clearCart,
       totalCartItems, 
       totalCartPrice, 
       totalSavings 
