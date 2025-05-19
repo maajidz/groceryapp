@@ -1,12 +1,13 @@
+import ShimmerPlaceholder from '@/components/ShimmerPlaceholder';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useCart } from '@/contexts/CartContext';
-import { getProductByIdWithLocalImages, allProducts as originalAllProducts, Product as OriginalProduct, ProductWithLocalImages } from '@/data/products';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { getProductById, allProducts as originalAllProducts, Product } from '@/data/products';
+import { ProductImageKeys, productImages } from '@/utils/imageMap';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -17,53 +18,64 @@ import {
   Share,
   StyleSheet,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+// Expo Router options for this screen
+export const options = {
+  headerShown: false,
+};
+
 export default function ProductDetailScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { cart, addItemToCart, removeItemFromCart, updateItemQuantity, getItemQuantity } = useCart();
 
-  const [product, setProduct] = useState<ProductWithLocalImages | null | undefined>(undefined);
+  const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
-  const [relatedProducts, setRelatedProducts] = useState<OriginalProduct[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [imageCarouselIndex, setImageCarouselIndex] = useState(0);
 
-  const colorScheme = useColorScheme() ?? 'light';
-  const themedTextColor = useThemeColor({ light: Colors.light.text, dark: Colors.dark.text }, 'text');
-  const themedLightTextColor = Colors.light.text;
-  const themedDarkTextColor = Colors.dark.text;
-  const themedBackgroundColor = useThemeColor({ light: Colors.light.background, dark: Colors.dark.background }, 'background');
-  const cardBackgroundColor = useThemeColor({ light: '#ffffff', dark: '#1c1c1e' }, 'background');
-  const tintColor = useThemeColor({ light: Colors.light.tint, dark: Colors.dark.tint }, 'tint');
-  const iconColor = useThemeColor({ light: Colors.light.icon, dark: Colors.dark.icon }, 'icon');
-  const mutedTextColor = useThemeColor({ light: '#6c757d', dark: '#adb5bd'}, 'text');
+  const themedTextColor = Colors.light.text;
+  const themedBackgroundColor = Colors.light.background;
+  const cardBackgroundColor = '#ffffff';
+  const tintColor = Colors.light.tint;
+  const iconColor = Colors.light.icon;
+  const mutedTextColor = '#6c757d';
   const greenColor = '#28a745';
   const lightGreenBackground = '#e9f7ef';
+  const themedBorderColor = '#e0e0e0';
 
-  const themedBorderColor = useThemeColor({ light: '#e0e0e0', dark: '#3a3a3c' }, 'icon');
+  const flatListRef = useRef<FlatList<string>>(null);
 
-  const flatListRef = useRef<FlatList<string | undefined>>(null);
+  // Moved dynamicStyles up as it's used in the isLoading block
+  const dynamicStyles = StyleSheet.create({
+    header: {
+      borderBottomColor: themedBorderColor,
+    },
+    brandContainer: {
+      borderColor: themedBorderColor,
+    },
+    relatedProductCard: {
+      borderColor: themedBorderColor,
+      backgroundColor: cardBackgroundColor,
+    },
+    attributeChipBackground: {
+      backgroundColor: '#f0f0f0',
+    }
+  });
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
-  }, [navigation]);
+  // Shimmer related dimensions
+  const mainImageWidth = Math.floor(screenWidth * (Platform.OS === 'ios' ? 1 : 0.95));
+  const mainImageHeight = Math.floor(mainImageWidth * 0.8);
 
   useEffect(() => {
     const fetchProductData = async () => {
       if (id) {
         setIsLoading(true);
-        const mainImageWidth = Math.floor(screenWidth * (Platform.OS === 'ios' ? 1 : 0.95));
-        const mainImageHeight = Math.floor(mainImageWidth * 0.8);
-
-        const foundProduct = await getProductByIdWithLocalImages(id, mainImageWidth, mainImageHeight);
+        const foundProduct = getProductById(id);
         setProduct(foundProduct || null);
         
         if (foundProduct) {
@@ -95,11 +107,13 @@ export default function ProductDetailScreen() {
     }
   };
 
-  const renderImageCarouselItem = ({ item }: { item: string | undefined }) => {
-    if (!item) {
+  const renderImageCarouselItem = ({ item: imageFileName }: { item: string }) => {
+    const imageSource = productImages[imageFileName as ProductImageKeys];
+    if (!imageSource) {
+      console.error(`Image not found in map: ${imageFileName}`);
       return <View style={styles.carouselImage}><ActivityIndicator color={tintColor}/></View>;
     }
-    return <Image source={{ uri: item }} style={styles.carouselImage} />;
+    return <Image source={imageSource} style={styles.carouselImage} />;
   };
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
@@ -112,9 +126,54 @@ export default function ProductDetailScreen() {
 
   if (isLoading) {
     return (
-      <ThemedView style={[styles.containerCentered, { backgroundColor: themedBackgroundColor }]}>
-        <ActivityIndicator size="large" color={tintColor} />
-        <ThemedText style={{ color: themedTextColor }}>Loading product details...</ThemedText>
+      <ThemedView style={[styles.container, { backgroundColor: themedBackgroundColor, paddingTop: Platform.OS === 'android' ? 30 : 50 }]}>
+        <ScrollView contentContainerStyle={styles.scrollContentContainerShimmer}>
+          {/* Header Shimmer (Simplified) */}
+          <View style={[styles.header, dynamicStyles.header, {justifyContent: 'space-between'}]}>
+            <ShimmerPlaceholder width={30} height={30} borderRadius={15} />
+            <View style={{alignItems: 'center'}}>
+                <ShimmerPlaceholder width={150} height={20} borderRadius={4} style={{marginBottom: 5}} />
+                <ShimmerPlaceholder width={100} height={16} borderRadius={4} />
+            </View>
+            <ShimmerPlaceholder width={30} height={30} borderRadius={15} />
+          </View>
+
+          {/* Image Carousel Shimmer */}
+          <View style={styles.carouselContainerShimmer}>
+            <ShimmerPlaceholder width={mainImageWidth} height={mainImageHeight} />
+          </View>
+
+          {/* Main Info Shimmer */}
+          <View style={[styles.sectionContainer, { backgroundColor: cardBackgroundColor, marginTop: 0 }]}>
+            <ShimmerPlaceholder width={screenWidth * 0.8 * 0.9} height={24} borderRadius={4} style={{ marginBottom: 10 }} />
+            <ShimmerPlaceholder width={screenWidth * 0.4 * 0.9} height={16} borderRadius={4} style={{ marginBottom: 15 }} />
+            
+             <View style={[styles.brandContainer, dynamicStyles.brandContainer, {paddingVertical: 10, marginBottom:10}]}>
+                <ShimmerPlaceholder width={30} height={30} borderRadius={15} style={{marginRight: 8}}/>
+                <ShimmerPlaceholder width={100} height={20} borderRadius={4} style={{flex:1}}/>
+                <ShimmerPlaceholder width={80} height={16} borderRadius={4} />
+             </View>
+
+            <ShimmerPlaceholder width={screenWidth * 0.3 * 0.9} height={18} borderRadius={4} style={{ marginBottom: 12 }} />
+            
+            <View style={styles.priceRowShimmer}>
+              <ShimmerPlaceholder width={100} height={28} borderRadius={4} style={{ marginRight: 8 }} />
+              <ShimmerPlaceholder width={80} height={18} borderRadius={4} style={{ marginRight: 8 }} />
+              <ShimmerPlaceholder width={60} height={20} borderRadius={4} />
+            </View>
+            <ShimmerPlaceholder width={screenWidth * 0.5 * 0.9} height={14} borderRadius={4} style={{ marginBottom: 20 }} />
+            <ShimmerPlaceholder width={screenWidth * 0.9} height={50} borderRadius={8} />
+          </View>
+
+          {/* Product Details Shimmer */}
+          <View style={[styles.sectionContainer, { backgroundColor: cardBackgroundColor, marginTop: 10 }]}>
+            <ShimmerPlaceholder width={150} height={22} borderRadius={4} style={{ marginBottom: 15 }} />
+            <ShimmerPlaceholder width={screenWidth * 0.9 * 0.9} height={16} borderRadius={4} style={{ marginBottom: 8 }} />
+            <ShimmerPlaceholder width={screenWidth * 0.8 * 0.9} height={16} borderRadius={4} style={{ marginBottom: 8 }} />
+            <ShimmerPlaceholder width={screenWidth * 0.95 * 0.9} height={16} borderRadius={4} style={{ marginBottom: 8 }} />
+          </View>
+
+        </ScrollView>
       </ThemedView>
     );
   }
@@ -132,8 +191,8 @@ export default function ProductDetailScreen() {
 
   const quantityInCart = getItemQuantity(product.id);
 
-  const handleAddItem = (p: ProductWithLocalImages | OriginalProduct) => {
-    addItemToCart(p as OriginalProduct);
+  const handleAddItem = (p: Product) => {
+    addItemToCart(p);
   };
 
   const handleIncreaseQuantity = (productId: string) => {
@@ -149,16 +208,31 @@ export default function ProductDetailScreen() {
     }
   };
   
-  const renderRelatedProduct = ({ item }: { item: OriginalProduct }) => {
+  const renderRelatedProduct = ({ item }: { item: Product }) => {
     const relatedItemQuantity = getItemQuantity(item.id);
+    const imageFilename = item.imageFileNames?.[0];
+    const relatedImageSource = imageFilename ? productImages[imageFilename as ProductImageKeys] : undefined;
+
+    const shimmerImageWidth = typeof styles.relatedProductImage.width === 'string' 
+                              ? Math.floor((screenWidth / 2.5) * 0.9)
+                              : styles.relatedProductImage.width;
+    const shimmerImageHeight = styles.relatedProductImage.height as number || 100;
+
     return (
-      <View style={[styles.relatedProductCard, {backgroundColor: cardBackgroundColor}, dynamicStyles.relatedProductCard]}>
+      <View style={[styles.relatedProductCard, dynamicStyles.relatedProductCard]}>
         {item.discount && (
           <View style={[styles.discountBadge, { backgroundColor: lightGreenBackground }]}>
             <ThemedText style={[styles.discountText, { color: greenColor }]}>{item.discount}</ThemedText>
           </View>
         )}
-        <Image source={{ uri: item.images[0] }} style={styles.relatedProductImage} />
+        {relatedImageSource ? 
+            <Image source={relatedImageSource} style={styles.relatedProductImage} /> 
+            : <ShimmerPlaceholder 
+                width={shimmerImageWidth} 
+                height={shimmerImageHeight} 
+                borderRadius={4} 
+                style={{marginBottom: 8}} />
+        }
         <View style={styles.relatedProductInfo}>
             <ThemedText numberOfLines={1} style={[styles.relatedProductName, {color: themedTextColor}]}>{item.name}</ThemedText>
             <ThemedText style={[styles.relatedProductWeight, {color: mutedTextColor}]}>{item.deliveryTime}</ThemedText>
@@ -179,28 +253,13 @@ export default function ProductDetailScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={styles.relatedAddButton} onPress={() => handleAddItem(item as OriginalProduct)}>
+          <TouchableOpacity style={styles.relatedAddButton} onPress={() => handleAddItem(item)}>
             <ThemedText style={styles.relatedAddButtonText}>ADD</ThemedText>
           </TouchableOpacity>
         )}
       </View>
     );
   };
-
-  const dynamicStyles = StyleSheet.create({
-    header: {
-      borderBottomColor: themedBorderColor,
-    },
-    brandContainer: {
-      borderColor: themedBorderColor,
-    },
-    relatedProductCard: {
-      borderColor: themedBorderColor,
-    },
-    attributeChipBackground: {
-      backgroundColor: colorScheme === 'light' ? '#f0f0f0' : '#2c2c2e',
-    }
-  });
 
   return (
     <ThemedView style={[styles.container, { backgroundColor: themedBackgroundColor }]}>
@@ -222,10 +281,10 @@ export default function ProductDetailScreen() {
         </View>
 
         <View style={styles.carouselContainer}>
-          {product && product.localImages && product.localImages.length > 0 ? (
+          {product && product.imageFileNames && product.imageFileNames.length > 0 ? (
             <FlatList
               ref={flatListRef}
-              data={product.localImages}
+              data={product.imageFileNames}
               renderItem={renderImageCarouselItem}
               keyExtractor={(item, index) => index.toString()}
               horizontal
@@ -242,9 +301,9 @@ export default function ProductDetailScreen() {
                 <ActivityIndicator color={tintColor} size="large"/>
             </View>
           )}
-          {product && product.localImages && product.localImages.length > 1 && (
+          {product && product.imageFileNames && product.imageFileNames.length > 1 && (
             <View style={styles.paginationContainer}>
-              {product.localImages.map((_, index) => (
+              {product.imageFileNames.map((_, index) => (
                 <View
                   key={index}
                   style={[
@@ -355,6 +414,10 @@ const styles = StyleSheet.create({
   scrollContentContainer: {
     paddingBottom: 30,
   },
+  scrollContentContainerShimmer: {
+    paddingHorizontal: 15, // Match sectionContainer padding
+    paddingBottom: 30,
+  },
   containerCentered: {
     flex: 1,
     justifyContent: 'center',
@@ -397,6 +460,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   carouselContainer: {
+  },
+  carouselContainerShimmer: {
+    width: screenWidth, // Full width for the shimmer container
+    alignItems: 'center', // Center the shimmer placeholder if screenWidth > mainImageWidth
+    marginBottom: 10, // Spacing before next section
   },
   carouselImage: {
     width: screenWidth,
@@ -452,8 +520,6 @@ const styles = StyleSheet.create({
   brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    paddingVertical: 8,
     borderTopWidth: 1,
     borderBottomWidth: 1,
   },
@@ -486,6 +552,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  priceRowShimmer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6, // Match styling of priceRow + taxesText
   },
   productPrice: {
     fontSize: 22,

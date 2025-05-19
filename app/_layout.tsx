@@ -1,5 +1,5 @@
 import { getApps } from '@react-native-firebase/app';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -10,7 +10,6 @@ import '../firebaseConfig';
 
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
-import { useColorScheme } from '@/hooks/useColorScheme';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 console.log('[_layout.tsx] SplashScreen.preventAutoHideAsync() called.');
@@ -18,7 +17,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   console.log('[_layout.tsx] RootLayout rendering or re-rendering...');
-  const colorScheme = useColorScheme();
+  const colorScheme = 'light';
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     Ionicons: require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
@@ -77,7 +76,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <CartProvider> 
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <ThemeProvider value={DefaultTheme}>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="cart" options={{ headerShown: false, presentation: 'modal' }} />
@@ -86,7 +85,7 @@ export default function RootLayout() {
             <Stack.Screen name="otp" options={{ headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="+not-found" />
           </Stack>
-          <StatusBar style="auto" />
+          <StatusBar style="dark" />
         </ThemeProvider>
       </CartProvider>
     </AuthProvider>

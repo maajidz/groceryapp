@@ -1,25 +1,31 @@
-export type Product = {
-  id: string;
-  name: string;
-  category: string;
-  brand: string;
-  weight: string;
-  price: string;
-  oldPrice?: string;
-  discount?: string;
-  deliveryTime: string;
-  imageFileNames: string[]; // Holds local file names like 'product_h1_0.png'
-  prompts: string[]; // Store prompts for user to generate images
-  tags: string[];
-  description?: string;
-  brandLogoUrl?: string; // This could also be a local asset later
-  attributes?: Array<{ label: string; value: string }>;
-};
+// downloadProductImages.js
+const fs = require('fs');
+const path = require('path');
+const https = require('https'); // Use https for pollinations.ai
 
-// Helper to generate product image filenames and prompts
-const generateProductImageAssets = (product: any, placeholderImages: string[]) => {
-  const imageFileNames: string[] = [];
-  const prompts: string[] = [];
+const BASE_URL = "https://image.pollinations.ai/prompt";
+const ASSETS_ROOT = path.join(__dirname, 'assets/generated_images'); // Ensure __dirname is used for relative paths
+const PRODUCTS_DIR = path.join(ASSETS_ROOT, 'products');
+
+if (!fs.existsSync(PRODUCTS_DIR)) {
+  fs.mkdirSync(PRODUCTS_DIR, { recursive: true });
+}
+
+function urlEncode(str) {
+  // Using Node.js's built-in querystring.escape or URLSearchParams is more robust
+  // but for simple prompt encoding, this should suffice.
+  // A more complete solution would be: return new URLSearchParams({prompt: str}).toString().substring(7);
+  return encodeURIComponent(str).replace(/[!'()*]/g, function(c) {
+    return '%' + c.charCodeAt(0).toString(16);
+  });
+}
+
+// --- Start of data copied from data/products.ts ---
+
+// Helper to generate product image filenames and prompts (copied from data/products.ts)
+const generateProductImageAssets = (product, placeholderImages) => {
+  const imageFileNames = [];
+  const prompts = [];
   placeholderImages.forEach((_originalImageUrl, index) => {
     imageFileNames.push(`product_${product.id}_${index}.png`);
     let prompt = `Commercial product photo of ${product.name}, brand: ${product.brand}, category: ${product.category}, detailed, high quality, studio lighting`;
@@ -48,7 +54,7 @@ const rawProductsData = [
   { id: 'p5', name: 'Maggi 2-Minute Noodles', category: 'Instant & Frozen Food', brand: 'Maggi', weight: '70g', price: '₹14', deliveryTime: '8 MINS', placeholderImages: [`https://via.placeholder.com/300x300.png/EFEFEF/AAAAAA&text=Maggi+Main`], tags: ['instant food', 'noodles', 'maggi'], description: 'Your favorite Maggi noodles, ready in just 2 minutes!', brandLogoUrl: `https://via.placeholder.com/40x40.png/EFEFEF/AAAAAA&text=Maggi`, attributes: [{label: 'Flavour', value: 'Masala'}, {label: 'Cooking Time', value: '2 Minutes'}] },
 ];
 
-export const allProducts: Product[] = rawProductsData.map(p => {
+const allProducts = rawProductsData.map(p => {
   const { imageFileNames, prompts } = generateProductImageAssets(p, p.placeholderImages);
   const { placeholderImages, ...rest } = p; // remove placeholderImages from final product object
   return {
@@ -57,12 +63,80 @@ export const allProducts: Product[] = rawProductsData.map(p => {
     prompts,
   };
 });
+// --- End of data copied from data/products.ts ---
 
-// New simplified functions to get products (now that images are local file names)
-export function getAllProducts(): Product[] {
-  return allProducts;
+
+async function downloadImage(url, filepath) {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(filepath);
+    // Ensure the agent is properly configured for HTTPS if needed, though usually not necessary for basic GET
+    const request = https.get(url, response => {
+      if (response.statusCode !== 200) {
+        // Consume response data to free up memory
+        response.resume();
+        reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
+        return;
+      }
+      response.pipe(file);
+      file.on('finish', () => {
+        file.close(resolve);
+      });
+    });
+    request.on('error', err => {
+      // fs.unlink(filepath, () => {}); // Don't unlink if file was not created or write failed early
+      if (fs.existsSync(filepath)) { // Only unlink if file was partially created
+           fs.unlink(filepath, (unlinkErr) => {
+               if (unlinkErr) console.error(`Error unlinking partially downloaded file ${filepath}:`, unlinkErr);
+           });
+      }
+      reject(err);
+    });
+  });
 }
 
-export function getProductById(id: string): Product | undefined {
-  return allProducts.find(p => p.id === id);
+async function processProducts() {
+  console.log('Downloading Product Images using Node.js script...');
+
+  for (const product of allProducts) {
+    if (!product.imageFileNames || !product.prompts) {
+        console.warn(`Skipping product ${product.id} due to missing imageFileNames or prompts.`);
+        continue;
+    }
+    for (let i = 0; i < product.imageFileNames.length; i++) {
+      const filename = product.imageFileNames[i];
+      const prompt = product.prompts[i];
+      if (!prompt || !filename) {
+          console.warn(`Skipping image for product ${product.id} due to missing filename or prompt at index ${i}.`);
+          continue;
+      }
+
+      const encodedPrompt = urlEncode(prompt);
+      // Add a random seed to try and get different images if re-run, and specify desired dimensions
+      const downloadUrl = `${BASE_URL}/${encodedPrompt}?width=400&height=400&seed=${Math.floor(Math.random() * 100000)}`;
+      const outputPath = path.join(PRODUCTS_DIR, filename);
+
+      console.log(`Downloading: ${filename} (Prompt: ${prompt.substring(0, 60)}...)`);
+      try {
+        await downloadImage(downloadUrl, outputPath);
+        console.log(`Saved to: ${outputPath}`);
+      } catch (error) {
+        console.error(`Error downloading ${filename}:`, error.message);
+      }
+      // Delay to be polite to the API server
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased delay to 2 seconds
+    }
+  }
+  console.log('Product image download process finished.');
 }
+
+processProducts().catch(err => {
+  console.error("Error in processing products:", err);
+});
+
+console.log("\n--- Script Instructions ---");
+console.log("This script attempts to download product images based on data embedded from 'data/products.ts'.");
+console.log("1. Ensure Node.js is installed.");
+console.log("2. Save this script (e.g., as downloadProductImages.js) in your project root (the directory containing 'assets' and 'utils').");
+console.log("3. Run the script from your project root: `node downloadProductImages.js`");
+console.log("4. Images will be saved to `assets/generated_images/products/`.");
+console.log("5. Remember to also download category and banner images using the bash script or manually as their prompts are not in this Node.js script.");
