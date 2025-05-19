@@ -2,10 +2,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useCart } from '@/contexts/CartContext'; // Import useCart
 import {
-  hydrateProductWithLocalImages // We'll use this to hydrate individual products for lists
-  ,
-
-
+  hydrateProductWithLocalImages, // We'll use this to hydrate individual products for lists
   allProducts as originalAllProducts,
   Product as OriginalProduct,
   ProductWithLocalImages
