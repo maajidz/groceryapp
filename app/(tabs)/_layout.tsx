@@ -1,7 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 // Platform might not be needed anymore if we apply display:none globally for tabBarStyle
-import { Platform } from 'react-native';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';

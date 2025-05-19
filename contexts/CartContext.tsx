@@ -1,25 +1,19 @@
+import { Product as AppProduct } from '@/data/products'; // Import the main Product type
 import React, { createContext, Dispatch, ReactNode, SetStateAction, useContext, useState } from 'react';
 
-// Define the structure of a product (simplified, ensure it matches your actual product structure)
-interface Product {
-  id: string;
-  name: string;
-  price: string; // e.g., '₹49'
-  oldPrice?: string; // e.g., '₹65'
-  image: string;
-  weight?: string;
-  // Add any other product properties you need
-}
+// Remove the local Product interface, as we will use the imported AppProduct
+// interface Product { ... }
 
-export interface CartItem extends Product {
+// CartItem will now extend the imported AppProduct
+export interface CartItem extends AppProduct {
   quantity: number;
 }
 
 interface CartContextType {
   cart: CartItem[];
-  setCart: Dispatch<SetStateAction<CartItem[]>>; // Allow direct cart modification if needed for complex cases
-  addItemToCart: (product: Product) => void;
-  decrementItemFromCart: (product: Product) => void;
+  setCart: Dispatch<SetStateAction<CartItem[]>>; 
+  addItemToCart: (product: AppProduct) => void; // Use AppProduct here
+  decrementItemFromCart: (product: AppProduct) => void; // Use AppProduct here
   removeItemFromCart: (productId: string) => void;
   updateItemQuantity: (productId: string, quantity: number) => void;
   getItemQuantity: (productId: string) => number;
@@ -34,7 +28,8 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  const addItemToCart = (product: Product) => {
+  // Product parameter now uses AppProduct type
+  const addItemToCart = (product: AppProduct) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
@@ -42,12 +37,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       } else {
+        // When adding a new item, it correctly spreads AppProduct and adds quantity
         return [...prevCart, { ...product, quantity: 1 }];
       }
     });
   };
 
-  const decrementItemFromCart = (product: Product) => {
+  // Product parameter now uses AppProduct type
+  const decrementItemFromCart = (product: AppProduct) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
