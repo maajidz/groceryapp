@@ -1,13 +1,13 @@
+
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useCart } from '@/contexts/CartContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-// Assuming allProducts array is defined in a central place, e.g., data/products.ts
-// For demonstration, let's define a mock product type and a way to get a product
-// You should replace this with your actual product data fetching logic
+import { ActivityIndicator, Image, ScrollView, StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { Colors } from '@/constants/Colors'; // Import Colors
+import { useThemeColor } from '@/hooks/useThemeColor'; // Import useThemeColor
 
 // Mock product data (replace with your actual data source)
 const allProducts = [
@@ -30,30 +30,41 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { cart, addItemToCart, removeItemFromCart, updateItemQuantity, getItemQuantity } = useCart();
 
-  const [product, setProduct] = useState<Product | null | undefined>(undefined); // undefined for loading, null for not found
+  const [product, setProduct] = useState<Product | null | undefined>(undefined); // undefined: loading, null: not found
+
+  // Theme colors
+  const colorScheme = useColorScheme() ?? 'light';
+  const themedTextColor = useThemeColor({ light: Colors.light.text, dark: Colors.dark.text }, 'text');
+  const themedBackgroundColor = useThemeColor({ light: Colors.light.background, dark: Colors.dark.background }, 'background');
+  const tintColor = useThemeColor({ light: Colors.light.tint, dark: Colors.dark.tint }, 'tint');
+  const iconColor = useThemeColor({ light: Colors.light.icon, dark: Colors.dark.icon }, 'icon');
+  const themedButtonTextColor = Colors[colorScheme].background; // For text on tinted buttons
+  const themedMutedTextColor = useThemeColor({ light: '#555', dark: Colors.dark.icon }, 'text'); // For description, old price
 
   useEffect(() => {
     if (id) {
       const foundProduct = getProductById(id);
-      setProduct(foundProduct);
+      setProduct(foundProduct || null); // If foundProduct is undefined (not found), set product to null
+    } else {
+      setProduct(null); // No ID provided, so product not found
     }
   }, [id]);
 
-  if (product === undefined) {
+  if (product === undefined && id) { // Still loading (e.g. if id just changed and useEffect hasn't run yet for that new id)
     return (
-      <ThemedView style={styles.containerCentered}>
-        <ActivityIndicator size="large" />
-        <ThemedText>Loading product...</ThemedText>
+      <ThemedView style={[styles.containerCentered, { backgroundColor: themedBackgroundColor }]}>
+        <ActivityIndicator size="large" color={tintColor} />
+        <ThemedText style={{ color: themedTextColor }}>Loading product...</ThemedText>
       </ThemedView>
     );
   }
 
-  if (!product) {
+  if (!product) { // Product not found (either ID was bad, no ID, or getProductById returned null via useEffect)
     return (
-      <ThemedView style={styles.containerCentered}>
-        <ThemedText style={styles.title}>Product Not Found</ThemedText>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ThemedText style={styles.backButtonText}>Go Back</ThemedText>
+      <ThemedView style={[styles.containerCentered, { backgroundColor: themedBackgroundColor }]}>
+        <ThemedText style={[styles.title, { color: themedTextColor }]}>Product Not Found</ThemedText>
+        <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: tintColor }]}>
+          <ThemedText style={[styles.backButtonText, { color: themedButtonTextColor }]}>Go Back</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
@@ -77,45 +88,79 @@ export default function ProductDetailScreen() {
     }
   };
 
+  // Dynamic styles using theme colors
+  const dynamicStyles = StyleSheet.create({
+    productPrice: {
+      color: tintColor,
+    },
+    productOldPrice: {
+      color: themedMutedTextColor,
+    },
+    productDescription: {
+      color: themedMutedTextColor,
+    },
+    addButton: {
+      backgroundColor: tintColor,
+    },
+    addButtonText: {
+      color: themedButtonTextColor,
+    },
+    quantityControlContainer: {
+      borderColor: tintColor,
+    },
+    quantityButtonIcon: {
+      color: tintColor,
+    },
+    quantityTextColor: {
+      color: themedTextColor
+    },
+    fixedBackButtonIcon: {
+      color: tintColor,
+    },
+    fixedBackButtonBackground: {
+      backgroundColor: colorScheme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(50,50,50,0.7)',
+    }
+  });
+
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: themedBackgroundColor }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Image source={{ uri: product.image }} style={styles.productImage} />
         
         <View style={styles.detailsContainer}>
-          <ThemedText style={styles.productName}>{product.name}</ThemedText>
+          <ThemedText style={[styles.productName, { color: themedTextColor }]}>{product.name}</ThemedText>
           
           <View style={styles.priceContainer}>
-            <ThemedText style={styles.productPrice}>{product.price}</ThemedText>
+            <ThemedText style={[styles.productPrice, dynamicStyles.productPrice]}>{product.price}</ThemedText>
             {product.oldPrice && (
-              <ThemedText style={styles.productOldPrice}>{product.oldPrice}</ThemedText>
+              <ThemedText style={[styles.productOldPrice, dynamicStyles.productOldPrice]}>{product.oldPrice}</ThemedText>
             )}
           </View>
 
-          <ThemedText style={styles.productDescription}>{product.description}</ThemedText>
+          <ThemedText style={[styles.productDescription, dynamicStyles.productDescription]}>{product.description}</ThemedText>
 
           <View style={styles.actionsContainer}>
             {quantityInCart > 0 ? (
-              <View style={styles.quantityControlContainer}>
+              <View style={[styles.quantityControlContainer, dynamicStyles.quantityControlContainer]}>
                 <TouchableOpacity onPress={handleDecreaseQuantity} style={styles.quantityButton}>
-                  <Ionicons name="remove-circle-outline" size={32} color="#00A877" />
+                  <Ionicons name="remove-circle-outline" size={32} style={dynamicStyles.quantityButtonIcon} />
                 </TouchableOpacity>
-                <ThemedText style={styles.quantityText}>{quantityInCart}</ThemedText>
+                <ThemedText style={[styles.quantityText, dynamicStyles.quantityTextColor]}>{quantityInCart}</ThemedText>
                 <TouchableOpacity onPress={handleIncreaseQuantity} style={styles.quantityButton}>
-                  <Ionicons name="add-circle-outline" size={32} color="#00A877" />
+                  <Ionicons name="add-circle-outline" size={32} style={dynamicStyles.quantityButtonIcon} />
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.addButton} onPress={handleAddItem}>
-                <ThemedText style={styles.addButtonText}>ADD TO CART</ThemedText>
+              <TouchableOpacity style={[styles.addButton, dynamicStyles.addButton]} onPress={handleAddItem}>
+                <ThemedText style={[styles.addButtonText, dynamicStyles.addButtonText]}>ADD TO CART</ThemedText>
               </TouchableOpacity>
             )}
           </View>
         </View>
       </ScrollView>
       {router.canGoBack() && (
-        <TouchableOpacity onPress={() => router.back()} style={styles.fixedBackButton}>
-          <Ionicons name="arrow-back-circle" size={40} color="#00A877" />
+        <TouchableOpacity onPress={() => router.back()} style={[styles.fixedBackButton, dynamicStyles.fixedBackButtonBackground]}>
+          <Ionicons name="arrow-back-circle" size={40} style={dynamicStyles.fixedBackButtonIcon} />
         </TouchableOpacity>
       )}
     </ThemedView>
@@ -133,11 +178,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   scrollContent: {
-    paddingBottom: 80, // Space for fixed back button or cart summary
+    paddingBottom: 80, 
   },
   productImage: {
     width: '100%',
-    aspectRatio: 1, // Square image
+    aspectRatio: 1, 
     resizeMode: 'contain',
   },
   detailsContainer: {
@@ -156,17 +201,17 @@ const styles = StyleSheet.create({
   productPrice: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#00A877', // Theme color
+    // color removed, will be handled by dynamicStyles
   },
   productOldPrice: {
     fontSize: 16,
-    color: '#888',
+    // color removed, will be handled by dynamicStyles
     textDecorationLine: 'line-through',
     marginLeft: 10,
   },
   productDescription: {
     fontSize: 16,
-    color: '#555',
+    // color removed, will be handled by dynamicStyles
     marginBottom: 20,
     lineHeight: 24,
   },
@@ -174,14 +219,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   addButton: {
-    backgroundColor: '#00A877',
+    // backgroundColor removed, will be handled by dynamicStyles
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonText: {
-    color: '#fff',
+    // color removed, will be handled by dynamicStyles
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -191,7 +236,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#00A877',
+    // borderColor removed, will be handled by dynamicStyles
     borderRadius: 8,
   },
   quantityButton: {
@@ -202,6 +247,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     minWidth: 30,
     textAlign: 'center',
+    // color removed, will be handled by dynamicStyles
   },
   title: {
     fontSize: 22,
@@ -209,21 +255,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backButton: {
-    backgroundColor: '#00A877',
+    // backgroundColor removed, will be handled by dynamicStyles
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
   },
   backButtonText: {
-    color: '#fff',
+    // color removed, will be handled by dynamicStyles
     fontSize: 16,
   },
   fixedBackButton: {
     position: 'absolute',
-    top: 40, // Adjust as per your header height or safe area
+    top: 40, 
     left: 15,
     zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    // backgroundColor removed, will be handled by dynamicStyles
     borderRadius: 20,
     padding: 5,
   }
