@@ -6,7 +6,7 @@ import '@react-native-firebase/auth'; // Ensures the auth module is registered w
 // IMPORTANT: Replace these with your actual Firebase project's web app credentials
 const firebaseConfig = {
   apiKey: "AIzaSyAgRAIGqCaIaUOq8rnK1R4yprf7tZvxAd0", // Get this from Firebase project settings
-  authDomain: "", // Get this from Firebase project settings
+  authDomain: "hotelgrocer-3cc31.firebaseapp.com", // Get this from Firebase project settings
   projectId: "hotelgrocer-3cc31", // Get this from Firebase project settings
   storageBucket: "hotelgrocer-3cc31.firebasestorage.app", // Get this from Firebase project settings
   messagingSenderId: "322999000463", // Get this from Firebase project settings
