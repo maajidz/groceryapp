@@ -1,26 +1,16 @@
-import firebase from '@react-native-firebase/app';
-
-// Defensive check
-if (!firebase.apps.length) {
-  console.warn("[AuthContext] Firebase still not initialized at the start of AuthContext. Attempting to initialize again.");
-  try {
-    firebase.initializeApp(); // Attempt to initialize if not already done
-    console.log("[AuthContext] Firebase initialized from within AuthContext.");
-  } catch (e) {
-    console.error("[AuthContext] Error initializing Firebase from within AuthContext:", e);
-    // Potentially throw an error here or set a state that prevents app usage
-  }
-}
-
-import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import { getApps } from '@react-native-firebase/app';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { useRouter } from 'expo-router';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
+
+// Removed the problematic module-level defensive check for Firebase initialization.
+// The readiness check is now handled in app/_layout.tsx before AuthProvider is mounted,
+// and further within AuthProvider's useEffect before using auth().
 
 interface User {
   uid: string;
   phoneNumber: string | null;
-  // Add other user details from Firebase User object if needed
 }
 
 interface AuthContextType {
@@ -45,6 +35,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Handle user state changes
   useEffect(() => {
+    if (!getApps().length) {
+      // This check is inside useEffect, so it runs after initial render.
+      // If Firebase is still not ready, it means firebaseConfig.ts didn't initialize it properly or early enough.
+      console.error("[AuthContext:useEffect] Firebase not initialized when attempting to set up onAuthStateChanged listener. Check app root import order.");
+      // Optionally, you could set an error state here and display a message to the user.
+      return; // Don't set up the listener if Firebase isn't ready.
+    }
+
     const subscriber = auth().onAuthStateChanged(firebaseUser => {
       if (firebaseUser) {
         setUser({
