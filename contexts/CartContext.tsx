@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
+import React, { createContext, Dispatch, ReactNode, SetStateAction, useContext, useState } from 'react';
 
 // Define the structure of a product (simplified, ensure it matches your actual product structure)
 interface Product {
@@ -19,6 +19,7 @@ interface CartContextType {
   cart: CartItem[];
   setCart: Dispatch<SetStateAction<CartItem[]>>; // Allow direct cart modification if needed for complex cases
   addItemToCart: (product: Product) => void;
+  decrementItemFromCart: (product: Product) => void;
   removeItemFromCart: (productId: string) => void;
   updateItemQuantity: (productId: string, quantity: number) => void;
   getItemQuantity: (productId: string) => number; // Added this line
@@ -43,6 +44,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       } else {
         return [...prevCart, { ...product, quantity: 1 }];
       }
+    });
+  };
+
+  const decrementItemFromCart = (product: Product) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item.id === product.id);
+      if (existingItem) {
+        if (existingItem.quantity > 1) {
+          // If quantity > 1, decrement it
+          return prevCart.map(item =>
+            item.id === product.id ? { ...item, quantity: item.quantity - 1 } : item
+          );
+        } else {
+          // If quantity is 1, remove the item
+          return prevCart.filter(item => item.id !== product.id);
+        }
+      }      
+      return prevCart; // If item not found, return cart as is
     });
   };
 

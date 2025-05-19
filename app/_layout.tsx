@@ -1,46 +1,79 @@
-import '../firebaseConfig'; // Import to initialize Firebase - ADJUST PATH AS NEEDED
+import { getApps } from '@react-native-firebase/app';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import '../firebaseConfig';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { CartProvider } from '@/contexts/CartContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { CartProvider } from '@/contexts/CartContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
+console.log('[_layout.tsx] SplashScreen.preventAutoHideAsync() called.');
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  console.log('[_layout.tsx] RootLayout rendering or re-rendering...');
   const colorScheme = useColorScheme();
-  const [loaded, error] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     Ionicons: require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
     MaterialIcons: require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf'),
   });
+  const [firebaseReady, setFirebaseReady] = useState(false);
 
   useEffect(() => {
-    if (error) {
-      console.error('Font loading error:', error);
-      SplashScreen.hideAsync(); 
+    if (fontsLoaded) {
+      console.log('[_layout.tsx] Fonts loaded successfully.');
     }
-  }, [error]);
+    if (fontError) {
+      console.error('[_layout.tsx] Font loading error:', fontError);
+    }
+  }, [fontsLoaded, fontError]);
 
   useEffect(() => {
-    if (loaded) {
+    console.log('[_layout.tsx] Firebase readiness check effect running...');
+    if (getApps().length > 0) {
+      console.log('[_layout.tsx] Firebase already ready on initial check.');
+      setFirebaseReady(true);
+    } else {
+      console.log('[_layout.tsx] Firebase not immediately ready, starting poller...');
+      const interval = setInterval(() => {
+        console.log('[_layout.tsx] Firebase poller checking...');
+        if (getApps().length > 0) {
+          console.log('[_layout.tsx] Firebase became ready via poller.');
+          setFirebaseReady(true);
+          clearInterval(interval);
+        }
+      }, 100); // Check every 100ms
+      return () => {
+        console.log('[_layout.tsx] Cleaning up Firebase poller.');
+        clearInterval(interval);
+      };
+    }
+  }, []); // Run once on mount
+
+  useEffect(() => {
+    console.log(`[_layout.tsx] Splash screen check: fontsLoaded: ${fontsLoaded}, firebaseReady: ${firebaseReady}`);
+    if (fontsLoaded && firebaseReady) {
+      console.log('[_layout.tsx] Both fonts loaded and Firebase ready. Hiding splash screen.');
       SplashScreen.hideAsync();
+    } else {
+      console.log('[_layout.tsx] Conditions not met to hide splash screen yet.');
     }
-  }, [loaded]);
+  }, [fontsLoaded, firebaseReady]);
 
-  // Do not return null if Firebase hasn't initialized if your init is async in firebaseConfig.ts
-  // However, for @react-native-firebase, native config usually handles this.
-  if (!loaded && !error) { 
-    return null;
+  console.log(`[_layout.tsx] Pre-render check: fontsLoaded: ${fontsLoaded}, firebaseReady: ${firebaseReady}`);
+  if (!fontsLoaded || !firebaseReady) {
+    console.log('[_layout.tsx] Returning null (fonts or Firebase not ready).');
+    return null; 
   }
   
+  console.log('[_layout.tsx] Rendering main app content.');
   return (
     <AuthProvider>
       <CartProvider> 

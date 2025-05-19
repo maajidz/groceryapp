@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  Platform,
-  KeyboardAvoidingView,
-  Pressable, // Changed from TouchableWithoutFeedback
-  Keyboard,
-  Alert
-} from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Image, // Changed from TouchableWithoutFeedback
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'ios' ? 14 : 12, 
   },
   continueButton: {
-    backgroundColor: '#6C757D', 
+    backgroundColor: '#00A877',
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',

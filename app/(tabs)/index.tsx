@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react'; // Removed useState for cart
-import { StyleSheet, FlatList, View, ScrollView, Platform, Image, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Ionicons } from '@expo/vector-icons'; 
-import { useRouter } from 'expo-router'; 
 import { useCart } from '@/contexts/CartContext'; // Import useCart
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useMemo } from 'react'; // Removed useState for cart
+import { FlatList, Image, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 // --- Expanded Sample Data --- 
 // (Assuming allProducts is defined as before or imported from a shared location)
@@ -35,7 +35,7 @@ const bannerImageUrl = `https://via.placeholder.com/380x130.png/E0E0E0/AAAAAA&te
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { cart, addItemToCart, totalCartItems, totalCartPrice } = useCart(); // Use global cart context
+  const { cart, addItemToCart, decrementItemFromCart, totalCartItems, totalCartPrice } = useCart(); // Added decrementItemFromCart
 
   const hotDeals = useMemo(() => allProducts.filter(p => ['h1', 'h2', 'h3'].includes(p.id)), []);
   const dailyNeeds = useMemo(() => allProducts.filter(p => ['d1', 'd2', 'd3'].includes(p.id)), []);
@@ -66,14 +66,23 @@ export default function HomeScreen() {
         <ThemedText style={styles.productName} numberOfLines={2}>{item.name}</ThemedText>
         <ThemedText style={styles.productWeight}>{item.weight}</ThemedText>
         
-        <View style={styles.productBottomContainer}>
-          <View style={styles.productPricingInfoContainer}> 
+        <View style={[
+          styles.productBottomContainer,
+          quantityInCart > 0 && styles.productBottomContainerColumn
+        ]}>
+          <View style={[
+            styles.productPricingInfoContainerBase,
+            quantityInCart === 0 && styles.productPricingInfoContainerRowMode
+          ]}> 
             <ThemedText style={styles.productPrice}>{item.price}</ThemedText>
             {item.oldPrice && <ThemedText style={styles.productOldPrice}>{item.oldPrice}</ThemedText>}
           </View>
           {quantityInCart > 0 ? (
-            <View style={styles.quantityControlContainer}>
-              <TouchableOpacity onPress={() => addItemToCart(item)} /* Will become decrement */ style={styles.quantityButton}>
+            <View style={[
+              styles.quantityControlContainer,
+              quantityInCart > 0 && styles.quantityControlContainerColumnMode
+            ]}>
+              <TouchableOpacity onPress={() => decrementItemFromCart(item)} style={styles.quantityButton}>
                 <Ionicons name="remove" size={16} color="#00A877" />
               </TouchableOpacity>
               <ThemedText style={styles.quantityText}>{quantityInCart}</ThemedText>
@@ -123,7 +132,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         <View style={styles.sectionContainer}>
-          <ThemedText type="title" style={styles.sectionTitle}>Shop by category</ThemedText>
+          <ThemedText type="title" style={[styles.sectionTitle, { paddingLeft: 15 }]}>Shop by category</ThemedText>
           <FlatList data={categories} renderItem={renderCategoryItem} keyExtractor={(item) => item.id} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalListContainer} />
         </View>
 
@@ -191,7 +200,18 @@ const styles = StyleSheet.create({
   productName: { fontSize: 13.5, fontWeight: '600', color: '#202020', marginBottom: 3, lineHeight: 18 },
   productWeight: { fontSize: 11.5, color: '#606060', marginBottom: 8 },
   productBottomContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-  productPricingInfoContainer: { flexDirection: 'column', alignItems: 'flex-start', flex: 1 },
+  productBottomContainerColumn: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+  },
+  productPricingInfoContainerBase: {
+    flexDirection: 'column', 
+    alignItems: 'flex-start',
+  },
+  productPricingInfoContainerRowMode: {
+    flex: 1,
+  },
   productPrice: { fontSize: 15, fontWeight: 'bold', color: '#1A1A1A' },
   productOldPrice: { fontSize: 11.5, color: '#808080', textDecorationLine: 'line-through' },
   addButton: { backgroundColor: '#FFFFFF', borderColor: '#00A877', borderWidth: 1.5, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 18, justifyContent: 'center', alignItems: 'center' },
@@ -202,6 +222,9 @@ const styles = StyleSheet.create({
     borderColor: '#00A877',
     borderWidth: 1.5,
     borderRadius: 8,
+  },
+  quantityControlContainerColumnMode: {
+    marginTop: 8,
   },
   quantityButton: {
     paddingHorizontal: 10,
