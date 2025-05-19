@@ -3,10 +3,17 @@
 import firebase, { getApp, getApps, initializeApp } from '@react-native-firebase/app';
 import '@react-native-firebase/auth'; // Ensures the auth module is registered with the core app
 
-// You can also import other Firebase modules you use here, e.g.:
-// import '@react-native-firebase/firestore';
-// import '@react-native-firebase/functions';
-
+// IMPORTANT: Replace these with your actual Firebase project's web app credentials
+const firebaseConfig = {
+  apiKey: "AIzaSyAgRAIGqCaIaUOq8rnK1R4yprf7tZvxAd0", // Get this from Firebase project settings
+  authDomain: "", // Get this from Firebase project settings
+  projectId: "hotelgrocer-3cc31", // Get this from Firebase project settings
+  storageBucket: "hotelgrocer-3cc31.firebasestorage.app", // Get this from Firebase project settings
+  messagingSenderId: "322999000463", // Get this from Firebase project settings
+  appId: "1:322999000463:android:2906df7a57597f5e4f3ffa", // Get this from Firebase project settings
+  // measurementId is optional and typically used for Google Analytics
+  // measurementId: "YOUR_MEASUREMENT_ID",
+};
 // Check if Firebase has already been initialized to avoid re-initialization errors
 if (!getApps().length) {
   try {
