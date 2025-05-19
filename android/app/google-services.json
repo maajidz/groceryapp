@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "322999000463",
+    "project_id": "hotelgrocer-3cc31",
+    "storage_bucket": "hotelgrocer-3cc31.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:322999000463:android:2906df7a57597f5e4f3ffa",
+        "android_client_info": {
+          "package_name": "com.hotel.grocer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgRAIGqCaIaUOq8rnK1R4yprf7tZvxAd0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
