@@ -116,19 +116,11 @@ export default function HomeScreen() {
       shimmerHeight = styles.productImageContainer.height;
     }
 
-    // Calculate shimmer width based on the productItemContainer's width
-    // dynamicStyles.productItemContainer.width is windowWidth * 0.37
-    // However, ShimmerPlaceholder is inside productImageContainer, which has width '100%'
-    // Let's make shimmer width effectively the full width of its direct parent (productImageContainer)
-    // We might need to pass the actual calculated width of productItemContainer if '100%' for shimmer is an issue.
-    // For now, let's assume ShimmerPlaceholder can take numeric width, and we want it to be full width of productItemContainer.
-    // The actual width of productItemContainer is determined by dynamicStyles.productItemContainer.width.
-    // Let's try to use a fixed width for shimmer for now, matching image's intended space.
-    const productItemCalculatedWidth = windowWidth * 0.37; // Width of the whole card
-    const shimmerWidth = productItemCalculatedWidth - 20; // Subtract padding of productItemContainer (10 on each side)
+    const productItemCalculatedWidth = windowWidth * 0.37; 
+    const shimmerWidth = productItemCalculatedWidth - 20; 
 
     return (
-      <Link href={{ pathname: "/products/[id]", params: { id: item.id } }} asChild>
+      <Link href={{ pathname: `/products/${item.id}` }} asChild>
         <Pressable style={[dynamicStyles.productItemContainer, {backgroundColor: cardBackgroundColor, borderColor: themedBorderColor}]}>
           <View style={styles.productImageContainer}> 
             {imageSource ? (
