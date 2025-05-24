@@ -6,7 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { getProductById, allProducts as originalAllProducts, Product } from '@/data/products';
 import { ProductImageKeys, productImages } from '@/utils/imageMap';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter, Stack } from 'expo-router'; // Added Stack
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,10 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Expo Router options for this screen
-export const options = {
-  headerShown: false,
-};
+// Removed: export const options = { headerShown: false, };
 
 export default function ProductDetailScreen() {
   const router = useRouter();
@@ -39,23 +36,21 @@ export default function ProductDetailScreen() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [imageCarouselIndex, setImageCarouselIndex] = useState(0);
 
+  // Theme colors (forced light)
   const themedTextColor = Colors.light.text;
   const themedBackgroundColor = Colors.light.background;
-  const cardBackgroundColor = '#ffffff';
+  const cardBackgroundColor = '#ffffff'; // Explicit white for cards
   const tintColor = Colors.light.tint;
   const iconColor = Colors.light.icon;
-  const mutedTextColor = '#6c757d';
-  const greenColor = '#28a745';
-  const lightGreenBackground = '#e9f7ef';
-  const themedBorderColor = '#e0e0e0';
+  const mutedTextColor = Colors.light.muted; // Use from Colors constant
+  const greenColor = Colors.light.tint; // Align with primary tint for consistency
+  const lightGreenBackground = '#e9f7ef'; // Or generate from tintColor
+  const themedBorderColor = Colors.light.border; // Use from Colors constant
 
   const flatListRef = useRef<FlatList<string>>(null);
-
-  // Moved dynamicStyles up as it's used in the isLoading block
+  
   const dynamicStyles = StyleSheet.create({
-    header: {
-      borderBottomColor: themedBorderColor,
-    },
+    // header is removed as Stack.Screen header is used
     brandContainer: {
       borderColor: themedBorderColor,
     },
@@ -64,11 +59,10 @@ export default function ProductDetailScreen() {
       backgroundColor: cardBackgroundColor,
     },
     attributeChipBackground: {
-      backgroundColor: '#f0f0f0',
+      backgroundColor: Colors.light.lightGray, // Use a color from your Colors constant
     }
   });
 
-  // Shimmer related dimensions
   const mainImageWidth = Math.floor(screenWidth * (Platform.OS === 'ios' ? 1 : 0.95));
   const mainImageHeight = Math.floor(mainImageWidth * 0.8);
 
@@ -81,7 +75,7 @@ export default function ProductDetailScreen() {
         
         if (foundProduct) {
           const filteredRelated = originalAllProducts.filter(
-            p => p.category === foundProduct.category && p.id !== foundProduct.id
+            (p: Product) => p.category === foundProduct.category && p.id !== foundProduct.id
           );
           setRelatedProducts(filteredRelated.slice(0, 10));
         } else {
@@ -101,7 +95,7 @@ export default function ProductDetailScreen() {
     if (!product) return;
     try {
       await Share.share({
-        message: `Check out this product: ${product.name} - ${product.price}`,
+        message: `Check out this product: ${product.name} - ₹${product.price}`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -125,39 +119,29 @@ export default function ProductDetailScreen() {
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
-  if (isLoading) {
+  if (isLoading || product === undefined) { // Keep shimmer if product is undefined during initial load
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: themedBackgroundColor, flex:1 }]}>
+         <Stack.Screen options={{ 
+            title: "Loading Product...", 
+            headerStyle: { backgroundColor: themedBackgroundColor },
+            headerTintColor: themedTextColor,
+            headerTitleStyle: { color: themedTextColor },
+            headerBackTitle: "",
+         }} />
         <ScrollView contentContainerStyle={styles.scrollContentContainerShimmer}>
-          {/* Header Shimmer (Simplified) */}
-          <View style={[styles.header, dynamicStyles.header, {justifyContent: 'space-between', marginTop: Platform.OS === 'android' ? 0 : 0 }]}>
-            <Pressable onPress={() => router.back()} style={styles.headerButton}>
-              <Ionicons name="arrow-back" size={26} color={iconColor} />
-            </Pressable>
-            <View style={{alignItems: 'center'}}>
-                <ShimmerPlaceholder width={150} height={20} borderRadius={4} style={{marginBottom: 5}} />
-                <ShimmerPlaceholder width={100} height={16} borderRadius={4} />
-            </View>
-          </View>
-
-          {/* Image Carousel Shimmer */}
           <View style={styles.carouselContainerShimmer}>
             <ShimmerPlaceholder width={mainImageWidth} height={mainImageHeight} />
           </View>
-
-          {/* Main Info Shimmer */}
           <View style={[styles.sectionContainer, { backgroundColor: cardBackgroundColor, marginTop: 0 }]}>
             <ShimmerPlaceholder width={screenWidth * 0.8 * 0.9} height={24} borderRadius={4} style={{ marginBottom: 10 }} />
             <ShimmerPlaceholder width={screenWidth * 0.4 * 0.9} height={16} borderRadius={4} style={{ marginBottom: 15 }} />
-            
-             <View style={[styles.brandContainer, dynamicStyles.brandContainer, {paddingVertical: 10, marginBottom:10}]}>
+            <View style={[styles.brandContainer, dynamicStyles.brandContainer, {paddingVertical: 10, marginBottom:10}]}>
                 <ShimmerPlaceholder width={30} height={30} borderRadius={15} style={{marginRight: 8}}/>
                 <ShimmerPlaceholder width={100} height={20} borderRadius={4} style={{flex:1}}/>
                 <ShimmerPlaceholder width={80} height={16} borderRadius={4} />
              </View>
-
             <ShimmerPlaceholder width={screenWidth * 0.3 * 0.9} height={18} borderRadius={4} style={{ marginBottom: 12 }} />
-            
             <View style={styles.priceRowShimmer}>
               <ShimmerPlaceholder width={100} height={28} borderRadius={4} style={{ marginRight: 8 }} />
               <ShimmerPlaceholder width={80} height={18} borderRadius={4} style={{ marginRight: 8 }} />
@@ -166,41 +150,34 @@ export default function ProductDetailScreen() {
             <ShimmerPlaceholder width={screenWidth * 0.5 * 0.9} height={14} borderRadius={4} style={{ marginBottom: 20 }} />
             <ShimmerPlaceholder width={screenWidth * 0.9} height={50} borderRadius={8} />
           </View>
-
-          {/* Product Details Shimmer */}
           <View style={[styles.sectionContainer, { backgroundColor: cardBackgroundColor, marginTop: 10 }]}>
             <ShimmerPlaceholder width={150} height={22} borderRadius={4} style={{ marginBottom: 15 }} />
             <ShimmerPlaceholder width={screenWidth * 0.9 * 0.9} height={16} borderRadius={4} style={{ marginBottom: 8 }} />
             <ShimmerPlaceholder width={screenWidth * 0.8 * 0.9} height={16} borderRadius={4} style={{ marginBottom: 8 }} />
             <ShimmerPlaceholder width={screenWidth * 0.95 * 0.9} height={16} borderRadius={4} style={{ marginBottom: 8 }} />
           </View>
-
         </ScrollView>
       </SafeAreaView>
     );
   }
 
-  if (!product) {
+  if (product === null) { // product is explicitly null (not found)
     return (
-      <ThemedView style={[styles.containerCentered, { backgroundColor: themedBackgroundColor }]}>
+      <SafeAreaView style={[styles.containerCentered, { backgroundColor: themedBackgroundColor }]}>
+        <Stack.Screen options={{ title: "Not Found" }} />
         <ThemedText style={[styles.title, { color: themedTextColor }]}>Product Not Found</ThemedText>
         <Pressable onPress={() => router.back()} style={[styles.goBackButton, { backgroundColor: tintColor }]}>
           <ThemedText style={{ color: Colors.dark.text }}>Go Back</ThemedText>
         </Pressable>
-      </ThemedView>
+      </SafeAreaView>
     );
   }
 
+  // If product is available, render the details
   const quantityInCart = getItemQuantity(product.id);
 
-  const handleAddItem = (p: Product) => {
-    addItemToCart(p);
-  };
-
-  const handleIncreaseQuantity = (productId: string) => {
-    updateItemQuantity(productId, getItemQuantity(productId) + 1);
-  };
-
+  const handleAddItem = (p: Product) => addItemToCart(p);
+  const handleIncreaseQuantity = (productId: string) => updateItemQuantity(productId, getItemQuantity(productId) + 1);
   const handleDecreaseQuantity = (productId: string) => {
     const currentQuantity = getItemQuantity(productId);
     if (currentQuantity > 1) {
@@ -214,7 +191,6 @@ export default function ProductDetailScreen() {
     const relatedItemQuantity = getItemQuantity(item.id);
     const relatedImageFilename = item.imageFileNames?.[0];
     const relatedImageSource = relatedImageFilename ? productImages[relatedImageFilename as ProductImageKeys] : undefined;
-
     const shimmerImageWidth = typeof styles.relatedProductImage.width === 'number' ? styles.relatedProductImage.width : 100; 
     const shimmerImageHeight = typeof styles.relatedProductImage.height === 'number' ? styles.relatedProductImage.height : 100;
     const shimmerImageBorderRadius = typeof styles.relatedProductImage.borderRadius === 'number' ? styles.relatedProductImage.borderRadius : 8;
@@ -237,7 +213,7 @@ export default function ProductDetailScreen() {
           <ThemedText style={[styles.relatedProductName, {color: themedTextColor}]} numberOfLines={2}>{item.name}</ThemedText>
           <ThemedText style={[styles.relatedProductWeight, {color: mutedTextColor}]}>{item.weight}</ThemedText>
           <View style={styles.relatedProductPriceRow}>
-            <ThemedText style={styles.relatedProductPrice}>{item.price}</ThemedText>
+            <ThemedText style={styles.relatedProductPrice}>₹{item.price}</ThemedText>
             {relatedItemQuantity > 0 ? (
               <View style={styles.relatedQuantityControl}>
                 <Pressable onPress={() => handleDecreaseQuantity(item.id)} style={styles.relatedQuantityButton}>
@@ -249,7 +225,7 @@ export default function ProductDetailScreen() {
                 </Pressable>
               </View>
             ) : (
-              <Pressable style={styles.relatedAddButton} onPress={() => handleAddItem(item)}>
+              <Pressable style={[styles.relatedAddButton, {backgroundColor: greenColor}]} onPress={() => handleAddItem(item)}>
                 <ThemedText style={styles.relatedAddButtonText}>ADD</ThemedText>
               </Pressable>
             )}
@@ -261,21 +237,19 @@ export default function ProductDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themedBackgroundColor, flex:1 }]}>
+      <Stack.Screen 
+        options={{ 
+          title: product.name, 
+          headerBackTitle: '', 
+          headerStyle: { backgroundColor: themedBackgroundColor },
+          headerTintColor: themedTextColor,
+          headerTitleStyle: { color: themedTextColor, fontSize: 18 }, // Ensuring title style
+        }} 
+      />
       <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-        <View style={[styles.header, dynamicStyles.header, {marginTop: Platform.OS === 'android' ? 10: 0}]}>
-          <Pressable onPress={() => router.back()} style={styles.headerButton}>
-            <Ionicons name="arrow-back" size={26} color={iconColor} />
-          </Pressable>
-          
-          <View style={styles.headerTitleContainer}>
-              <ThemedText style={[styles.headerTitle, { color: themedTextColor }]} numberOfLines={1} ellipsizeMode="tail">
-                {product.name}
-              </ThemedText>
-          </View>
-        </View>
-
+        {/* Custom Header View is REMOVED */}
         <View style={styles.carouselContainer}>
-          {product && product.imageFileNames && product.imageFileNames.length > 0 ? (
+          {product.imageFileNames && product.imageFileNames.length > 0 ? (
             <FlatList
               ref={flatListRef}
               data={product.imageFileNames}
@@ -295,7 +269,7 @@ export default function ProductDetailScreen() {
                 <ActivityIndicator color={tintColor} size="large"/>
             </View>
           )}
-          {product && product.imageFileNames && product.imageFileNames.length > 1 && (
+          {product.imageFileNames && product.imageFileNames.length > 1 && (
             <View style={styles.paginationContainer}>
               {product.imageFileNames.map((_, index) => (
                 <View
@@ -310,10 +284,12 @@ export default function ProductDetailScreen() {
           )}
         </View>
         
-        {product && (
-          <View style={[styles.sectionContainer, { backgroundColor: cardBackgroundColor}]}>
+        <View style={[styles.sectionContainer, { backgroundColor: cardBackgroundColor}]}>
             <View style={styles.mainInfoRow}>
-              <ThemedText style={[styles.productName, {color: themedTextColor}]}>{product.name}</ThemedText>
+              {/* Product name here is now effectively the second header, so we remove it or make it less prominent */}
+              {/* <ThemedText style={[styles.productName, {color: themedTextColor}]}>{product.name}</ThemedText> */}
+              {/* To keep it but make it less prominent, you could reduce font size or change style */}
+              <View style={{flex: 1}} />{/* This empty view will allow share icon to be on the right */}
               <Pressable onPress={handleShare} style={styles.shareIconContainer}>
                 <Ionicons name="share-social-outline" size={24} color={iconColor} />
               </Pressable>
@@ -337,8 +313,8 @@ export default function ProductDetailScreen() {
             <ThemedText style={[styles.productWeight, {color: themedTextColor}]}>{product.weight}</ThemedText>
 
             <View style={styles.priceRow}>
-              <ThemedText style={[styles.productPrice, {color: themedTextColor}]}>{product.price}</ThemedText>
-              {product.oldPrice && <ThemedText style={[styles.productOldPrice, {color: mutedTextColor}]}>MRP {product.oldPrice}</ThemedText>}
+              <ThemedText style={[styles.productPrice, {color: themedTextColor}]}>₹{product.price}</ThemedText>
+              {product.oldPrice && <ThemedText style={[styles.productOldPrice, {color: mutedTextColor}]}>MRP ₹{product.oldPrice}</ThemedText>}
               {product.discount && (
                 <View style={[styles.discountTag, {backgroundColor: lightGreenBackground}]}>
                   <ThemedText style={[styles.discountText, {color: greenColor}]}>{product.discount}</ThemedText>
@@ -363,9 +339,8 @@ export default function ProductDetailScreen() {
               </Pressable>
             )}
           </View>
-        )}
 
-        {product && (product.attributes && product.attributes.length > 0 || product.description) && (
+        { (product.attributes && product.attributes.length > 0 || product.description) && (
           <View style={[styles.sectionContainer, { backgroundColor: cardBackgroundColor, marginTop: 10 }]}>
             <ThemedText style={[styles.sectionTitle, {color: themedTextColor}]}>Product Details</ThemedText>
             {product.attributes && product.attributes.map((attr, index) => (
@@ -382,7 +357,7 @@ export default function ProductDetailScreen() {
           </View>
         )}
         
-        {product && relatedProducts.length > 0 && (
+        {relatedProducts.length > 0 && (
           <View style={[styles.sectionContainer, { backgroundColor: themedBackgroundColor, marginTop: 10, paddingHorizontal: 0 }]}>
             <ThemedText style={[styles.sectionTitle, {color: themedTextColor, paddingHorizontal: 15}]}>Top {relatedProducts.length} products in this category</ThemedText>
             <FlatList
@@ -401,6 +376,7 @@ export default function ProductDetailScreen() {
   );
 }
 
+// Styles (ensure header style is removed or unused)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -409,7 +385,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   scrollContentContainerShimmer: {
-    paddingHorizontal: 15, // Match sectionContainer padding
+    // paddingHorizontal: 15, // Removed to allow full width shimmer for carousel
     paddingBottom: 30,
   },
   containerCentered: {
@@ -428,43 +404,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 5,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Platform.OS === 'android' ? 15 : 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-  },
-  headerButton: {
-    padding: 5,
-  },
-  headerTitleContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  // header style is removed as we use Stack.Screen header
   carouselContainer: {
+    // No specific styles needed here now, defaults are fine
   },
   carouselContainerShimmer: {
-    width: screenWidth, // Full width for the shimmer container
-    alignItems: 'center', // Center the shimmer placeholder if screenWidth > mainImageWidth
-    marginBottom: 10, // Spacing before next section
+    width: screenWidth, 
+    alignItems: 'center', 
+    marginBottom: 10, 
   },
   carouselImage: {
     width: screenWidth,
     height: screenWidth * 0.8,
     resizeMode: 'contain',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Colors.light.lightGray, // Light placeholder bg
     justifyContent: 'center',
     alignItems: 'center'
   },
   carouselImagePlaceholder: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Colors.light.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -492,7 +450,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 8,
   },
-  productName: {
+  productName: { // This was the style for the removed second header title
     fontSize: 20,
     fontWeight: 'bold',
     flex: 1,
@@ -509,8 +467,10 @@ const styles = StyleSheet.create({
   brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 10, // Added padding for spacing
     borderTopWidth: 1,
     borderBottomWidth: 1,
+    marginBottom: 10, // Added margin for spacing
   },
   brandLogo: {
     width: 30,
@@ -545,7 +505,7 @@ const styles = StyleSheet.create({
   priceRowShimmer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6, // Match styling of priceRow + taxesText
+    marginBottom: 6, 
   },
   productPrice: {
     fontSize: 22,
@@ -588,8 +548,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 6,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#28a745',
+    borderWidth: 1.5, // Made border slightly thicker
+    // borderColor: '#28a745', // Color will be tintColor
     marginTop: 10,
     alignSelf: 'stretch',
   },
@@ -656,6 +616,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     marginBottom: 8,
     borderRadius: 4,
+    backgroundColor: Colors.light.lightGray, // Added light bg for consistency
   },
   relatedProductInfo: {
     flex: 1,
@@ -667,7 +628,7 @@ const styles = StyleSheet.create({
   },
   relatedProductWeight: {
     fontSize: 11,
-    color: Colors.light.muted,
+    // color: Colors.light.muted, // Already applied inline
     marginBottom: 4,
   },
   relatedProductPriceRow: {
@@ -679,12 +640,15 @@ const styles = StyleSheet.create({
   relatedProductPrice: {
     fontSize: 14,
     fontWeight: 'bold',
+    // color: Colors.light.text, // Should be tint for price
   },
   relatedAddButton: {
-    borderColor: Colors.light.tint,
-    paddingVertical: 8,
+    // borderColor: Colors.light.tint, // Applied via direct backgroundColor
+    paddingVertical: 6, // Adjusted padding
+    paddingHorizontal: 12, // Added horizontal padding
     borderRadius: 6,
     alignItems: 'center',
+    justifyContent: 'center', // Center text
     marginTop: 'auto',
   },
   relatedAddButtonText: {
@@ -696,17 +660,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    borderWidth: 1,
-    borderColor: '#28a745',
+    borderWidth: 1.5, // Made border slightly thicker
+    // borderColor: '#28a745', // Color will be tintColor
     borderRadius: 6,
-    paddingVertical: 4,
+    paddingVertical: 2, // Adjusted padding
     marginTop: 'auto',
   },
   relatedQuantityButton: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8, // Adjusted padding
   },
   relatedQuantityText: {
     fontSize: 14,
     fontWeight: 'bold',
+    marginHorizontal: 6, // Adjusted margin
   },
 });
