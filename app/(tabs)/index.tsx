@@ -71,7 +71,13 @@ export default function HomeScreen() {
   const dailyNeeds = useMemo(() => allDisplayProducts.filter(p => ['d1', 'd2', 'd3'].includes(p.id)), [allDisplayProducts]);
 
   const renderCategoryItem = ({ item }: { item: typeof categoriesData[0] }) => (
-    <Pressable style={[dynamicStyles.categoryItemContainer, {backgroundColor: cardBackgroundColor}]}>
+    <Pressable 
+      style={[dynamicStyles.categoryItemContainer, {backgroundColor: cardBackgroundColor}]}
+      onPress={() => router.push({ 
+        pathname: '/category/[categoryName]', 
+        params: { categoryName: encodeURIComponent(item.name) } 
+      })} 
+    >
       {/* Use imageMap for category images */}
       <Image source={categoryImages[item.imageFileName]} style={styles.categoryImage} resizeMode="contain" />
       <ThemedText style={dynamicStyles.categoryName}>{item.name}</ThemedText>
@@ -120,7 +126,7 @@ export default function HomeScreen() {
     const shimmerWidth = productItemCalculatedWidth - 20; 
 
     return (
-      <Link href={{ pathname: `/products/${item.id}` }} asChild>
+      <Link href={{ pathname: '/products/[id]', params: { id: item.id } }} asChild>
         <Pressable style={[dynamicStyles.productItemContainer, {backgroundColor: cardBackgroundColor, borderColor: themedBorderColor}]}>
           <View style={styles.productImageContainer}> 
             {imageSource ? (
