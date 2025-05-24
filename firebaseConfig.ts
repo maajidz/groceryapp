@@ -5,7 +5,8 @@ import '@react-native-firebase/auth'; // Ensures the auth module is registered w
 
 // IMPORTANT: Replace these with your actual Firebase project's web app credentials
 const firebaseConfig = {
-  apiKey: "AIzaSyAgRAIGqCaIaUOq8rnK1R4yprf7tZvxAd0", // Get this from Firebase project settings
+  apiKey: "AIzaSyAdk9uqs8Z5tja4eqHVkByEGgojHstAswE", // Get this from Firebase project settings
+  databaseURL: "https://hotelgrocer-3cc31-default-rtdb.asia-southeast1.firebasedatabase.app/",
   authDomain: "hotelgrocer-3cc31.firebaseapp.com", // Get this from Firebase project settings
   projectId: "hotelgrocer-3cc31", // Get this from Firebase project settings
   storageBucket: "hotelgrocer-3cc31.firebasestorage.app", // Get this from Firebase project settings
@@ -17,11 +18,8 @@ const firebaseConfig = {
 // Check if Firebase has already been initialized to avoid re-initialization errors
 if (!getApps().length) {
   try {
-    // Initialize Firebase.
-    // This will automatically use your google-services.json (Android)
-    // or GoogleService-Info.plist (iOS)
-    // @ts-ignore RNFirebase allows initializeApp() without args for default native config
-    initializeApp();
+    // Initialize Firebase with the provided configuration object
+    initializeApp(firebaseConfig);
     console.log('Firebase initialized successfully via firebaseConfig.ts');
     // Add diagnostic log here:
     console.log(`[firebaseConfig.ts] After initializeApp(), getApps().length: ${getApps().length}`);

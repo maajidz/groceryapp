@@ -1,20 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  StyleSheet,
-  View,
-  TextInput,
-  TouchableOpacity,
-  Platform,
-  KeyboardAvoidingView,
-  Pressable,
-  Keyboard,
-  Alert
-} from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const OTP_LENGTH = 6;
 
@@ -36,7 +35,7 @@ export default function OtpScreen() {
   }, []);
 
   useEffect(() => {
-    let timerInterval: NodeJS.Timeout;
+    let timerInterval: any;
     if (resendTimer > 0) {
       timerInterval = setInterval(() => {
         setResendTimer(prev => prev - 1);
@@ -113,11 +112,11 @@ export default function OtpScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+      <Pressable onPress={() => router.back()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#000" />
-      </TouchableOpacity>
+      </Pressable>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -135,7 +134,7 @@ export default function OtpScreen() {
               {otp.map((digit, index) => (
                 <TextInput
                   key={index}
-                  ref={ref => inputRefs.current[index] = ref}
+                  ref={el => { inputRefs.current[index] = el; }}
                   style={styles.otpInput}
                   keyboardType="number-pad"
                   maxLength={1}
@@ -147,7 +146,7 @@ export default function OtpScreen() {
               ))}
             </View>
 
-            <TouchableOpacity 
+            <Pressable
               style={[styles.verifyButton, authIsLoading && styles.verifyButtonDisabled]}
               onPress={() => handleVerifyOtp()} 
               disabled={authIsLoading || otp.join('').length !== OTP_LENGTH}
@@ -155,27 +154,27 @@ export default function OtpScreen() {
               <ThemedText style={styles.verifyButtonText}>
                 {authIsLoading ? 'Verifying...' : 'Verify OTP'}
               </ThemedText>
-            </TouchableOpacity>
+            </Pressable>
 
             {resendTimer > 0 ? (
                 <ThemedText style={styles.resendOtpText}>Resend OTP in {resendTimer}s</ThemedText>
             ) : (
-                <TouchableOpacity onPress={handleResendOtp} disabled={isResendingOtp || authIsLoading}>
+                <Pressable onPress={handleResendOtp} disabled={isResendingOtp || authIsLoading}>
                     <ThemedText style={[styles.resendOtpText, styles.resendOtpLink]}>
                         {isResendingOtp ? 'Sending...' : 'Resend OTP'}
                     </ThemedText>
-                </TouchableOpacity>
+                </Pressable>
             )}
           </View>
         </Pressable>
       </KeyboardAvoidingView>
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  backButton: { position: 'absolute', top: Platform.OS === 'android' ? 20 : 50, left: 15, zIndex: 10, padding:10 },
+  backButton: { position: 'absolute', top: Platform.OS === 'android' ? 20 : 10, left: 15, zIndex: 10, padding:10 },
   keyboardAvoidingContainer: { flex: 1 },
   pressableContainer: { flex: 1 },
   innerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 30 },

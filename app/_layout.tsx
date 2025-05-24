@@ -1,13 +1,16 @@
 import { getApps } from '@react-native-firebase/app';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import * as DevClient from 'expo-dev-client';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../firebaseConfig';
 
+import { AddressProvider } from '@/contexts/AddressContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 
@@ -74,20 +77,27 @@ export default function RootLayout() {
   
   console.log('[_layout.tsx] Rendering main app content.');
   return (
-    <AuthProvider>
-      <CartProvider> 
-        <ThemeProvider value={DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="cart" options={{ headerShown: false, presentation: 'modal' }} />
-            <Stack.Screen name="search" options={{ headerShown: false, presentation: 'modal' }} />
-            <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
-            <Stack.Screen name="otp" options={{ headerShown: false, presentation: 'modal' }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          <StatusBar style="dark" />
-        </ThemeProvider>
-      </CartProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <CartProvider>
+          <AddressProvider>
+            <ThemeProvider value={DefaultTheme}>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="cart" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="search" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="otp" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="address" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="payment" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="tracking" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="+not-found" />
+              </Stack>
+              <StatusBar style="dark" translucent={false} />
+            </ThemeProvider>
+          </AddressProvider>
+        </CartProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

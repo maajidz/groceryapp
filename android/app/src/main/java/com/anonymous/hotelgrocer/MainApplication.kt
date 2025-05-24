@@ -1,4 +1,4 @@
-package com.hotel.grocer
+package com.anonymous.hotelgrocer
 
 import android.app.Application
 import android.content.res.Configuration

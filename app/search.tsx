@@ -1,26 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, TextInput, FlatList, TouchableOpacity, Image, Keyboard, Platform, ScrollView } from 'react-native'; // Added ScrollView
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { useCart } from '@/contexts/CartContext';
+import { Product, allProducts } from '@/data/products'; // Import global Product type and allProducts
+import { ProductImageKeys, productImages } from '@/utils/imageMap'; // Import productImages map
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter, Link } from 'expo-router'; // Import Link
-import { useCart } from '@/contexts/CartContext'; 
+import { Link, Stack, useRouter } from 'expo-router'; // Import Link
+import React, { useEffect, useState } from 'react';
+import { FlatList, Image, Keyboard, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native'; // Added ScrollView, Changed TouchableOpacity to Pressable
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const allProducts = [
-  { id: 'h1', name: 'Catch Cumin Seeds / Jeera Seeds', category: 'Spices', brand: 'Catch', weight: '100 g', price: '₹49', oldPrice: '₹65', discount: '24% OFF', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Cumin`, tags: ['spice', 'cumin', 'jeera', 'masala'] },
-  { id: 'h2', name: 'Whole Farm Grocery Makhana', category: 'Snacks', brand: 'Whole Farm', weight: '100 g', price: '₹159', oldPrice: '₹210', discount: '24% OFF', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Makhana`, tags: ['snack', 'makhana', 'fox nuts', 'healthy'] },
-  { id: 'h3', name: 'Whole Farm Grocery Raisins', category: 'Dry Fruits', brand: 'Whole Farm', weight: '200 g', price: '₹88', oldPrice: '₹200', discount: '56% OFF', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Raisins`, tags: ['dry fruit', 'raisins', 'kishmish'] },
-  { id: 'd1', name: 'Sweet Corn - Packet', category: 'Vegetables', brand: 'Local', weight: '(180-200) g', price: '₹20', oldPrice: '₹45', discount: '56% OFF', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Corn`, tags: ['vegetable', 'corn', 'sweet corn'] },
-  { id: 'd2', name: 'Kiran Watermelon (Tarbuj)', category: 'Fruits', brand: 'Kiran', weight: '1 piece', price: '₹80', oldPrice: '₹100', discount: '23% OFF', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Watermelon`, tags: ['fruit', 'watermelon', 'tarbuj'] },
-  { id: 'd3', name: 'Baby Banana', category: 'Fruits', brand: 'Local', weight: '4 pieces', price: '₹30', oldPrice: '₹35', discount: '21% OFF', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Banana`, tags: ['fruit', 'banana', 'baby banana'] },
-  { id: 'p1', name: 'Amul Gold Milk', category: 'Dairy & Breakfast', brand: 'Amul', weight: '1 Litre', price: '₹70', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Milk`, tags: ['dairy', 'milk', 'amul gold'] },
-  { id: 'p2', name: 'Britannia Brown Bread', category: 'Dairy & Breakfast', brand: 'Britannia', weight: '400g', price: '₹50', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Bread`, tags: ['bakery', 'bread', 'brown bread'] },
-  { id: 'p3', name: 'Lays Classic Salted Chips', category: 'Munchies', brand: 'Lays', weight: '52g', price: '₹20', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Chips`, tags: ['snack', 'chips', 'lays', 'potato'] },
-  { id: 'p4', name: 'Coca-Cola Can', category: 'Cold Drinks & Juices', brand: 'Coca-Cola', weight: '300ml', price: '₹40', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Coke`, tags: ['beverage', 'coke', 'soda', 'cold drink'] },
-  { id: 'p5', name: 'Maggi 2-Minute Noodles', category: 'Instant & Frozen Food', brand: 'Maggi', weight: '70g', price: '₹14', deliveryTime: '8 MINS', image: `https://via.placeholder.com/145x110.png/EFEFEF/AAAAAA&text=Maggi`, tags: ['instant food', 'noodles', 'maggi'] },
-];
-
-type Product = typeof allProducts[0];
 const COMMONLY_ORDERED = ['Milk', 'Bread', 'Lays Classic Salted Chips', 'Dal', 'Maggi 2-Minute Noodles', 'Oil', 'Tea'];
 
 export default function SearchScreen() {
@@ -64,25 +51,32 @@ export default function SearchScreen() {
   };
 
   const renderRecentSearchItem = ({ item }: { item: string }) => (
-    <TouchableOpacity style={styles.recentSearchChip} onPress={() => executeSearchFromPill(item)}>
+    <Pressable style={styles.recentSearchChip} onPress={() => executeSearchFromPill(item)}>
       <ThemedText style={styles.recentSearchText}>{item}</ThemedText>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   const renderCommonlyOrderedItem = ({ item }: { item: string }) => (
-    <TouchableOpacity style={styles.recentSearchChip} onPress={() => executeSearchFromPill(item)}>
+    <Pressable style={styles.recentSearchChip} onPress={() => executeSearchFromPill(item)}>
       <ThemedText style={styles.recentSearchText}>{item}</ThemedText>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   const renderProductResultItem = ({ item }: { item: Product }) => {
     const cartItem = cart.find(ci => ci.id === item.id);
     const quantityInCart = cartItem ? cartItem.quantity : 0;
 
+    const imageFilename = item.imageFileNames?.[0];
+    const imageSource = imageFilename ? productImages[imageFilename as ProductImageKeys] : undefined;
+
     return (
       <Link href={{ pathname: "/products/[id]", params: { id: item.id } }} asChild>
-        <TouchableOpacity style={styles.productResultItem}>
-            <Image source={{ uri: item.image }} style={styles.productResultImage} resizeMode="contain" />
+        <Pressable style={styles.productResultItem}>
+            {imageSource ? (
+              <Image source={imageSource} style={styles.productResultImage} resizeMode="contain" />
+            ) : (
+              <View style={[styles.productResultImage, styles.productImagePlaceholder]} /> // Basic placeholder
+            )}
             <View style={styles.productResultInfo}>
                 <ThemedText style={styles.productResultName} numberOfLines={2}>{item.name}</ThemedText>
                 <ThemedText style={styles.productResultWeight}>{item.weight}</ThemedText>
@@ -93,20 +87,20 @@ export default function SearchScreen() {
             </View>
             {quantityInCart > 0 ? (
                 <View style={styles.quantityControlContainer}>
-                    <TouchableOpacity onPress={() => updateItemQuantity(item.id, quantityInCart - 1)} style={styles.quantityButton}>
+                    <Pressable onPress={() => updateItemQuantity(item.id, quantityInCart - 1)} style={styles.quantityButton}>
                         <Ionicons name="remove" size={16} color="#00A877" />
-                    </TouchableOpacity>
+                    </Pressable>
                     <ThemedText style={styles.quantityText}>{quantityInCart}</ThemedText>
-                    <TouchableOpacity onPress={() => addItemToCart(item)} style={styles.quantityButton}>
+                    <Pressable onPress={() => addItemToCart(item)} style={styles.quantityButton}>
                         <Ionicons name="add" size={16} color="#00A877" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             ) : (
-                <TouchableOpacity style={styles.productResultAddButton} onPress={() => addItemToCart(item)}>
+                <Pressable style={styles.productResultAddButton} onPress={() => addItemToCart(item)}>
                     <ThemedText style={styles.productResultAddButtonText}>ADD</ThemedText>
-                </TouchableOpacity>
+                </Pressable>
             )}
-        </TouchableOpacity>
+        </Pressable>
       </Link>
   )};
 
@@ -115,12 +109,12 @@ export default function SearchScreen() {
   const showNoResults = searchQuery.length > 0 && displayedProductsInGrid.length === 0;
 
   return (
-    <ThemedView style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.searchHeader}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
+        </Pressable>
         <TextInput
           style={styles.searchInput}
           placeholder="Search for atta dal and more"
@@ -131,9 +125,9 @@ export default function SearchScreen() {
           returnKeyType="search"
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => { setSearchQuery(''); setDisplayedProductsInGrid([]); }} style={styles.clearButton}>
+          <Pressable onPress={() => { setSearchQuery(''); setDisplayedProductsInGrid([]); }} style={styles.clearButton}>
             <Ionicons name="close-circle" size={20} color="#888" />
-          </TouchableOpacity>
+          </Pressable>
         )}
       </View>
 
@@ -149,9 +143,9 @@ export default function SearchScreen() {
               <View style={styles.recentSearchesContainer}>
                 <View style={styles.recentSearchesHeader}>
                   <ThemedText style={styles.recentSearchesTitle}>Recent searches</ThemedText>
-                  <TouchableOpacity onPress={clearRecentSearches}>
+                  <Pressable onPress={clearRecentSearches}>
                     <ThemedText style={styles.clearRecentText}>clear</ThemedText>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
                 <View style={styles.recentSearchesChipsContainer}>
                   {recentSearches.map((item, index) => <View key={`recent-${index}`}>{renderRecentSearchItem({ item })}</View>)}
@@ -196,19 +190,31 @@ export default function SearchScreen() {
             <ThemedText style={styles.cartPreviewText}>{totalCartItems} Item{totalCartItems > 1 ? 's' : ''}</ThemedText>
             <ThemedText style={styles.cartPreviewPrice}>₹{totalCartPrice.toFixed(2)}</ThemedText>
           </View>
-          <TouchableOpacity style={styles.viewCartButton} onPress={() => router.push('/cart')}>
+          <Pressable style={styles.viewCartButton} onPress={() => router.push('/cart')}>
             <ThemedText style={styles.viewCartButtonText}>View Cart</ThemedText>
             <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )}
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  searchHeader: { flexDirection: 'row', alignItems: 'center', paddingTop: Platform.OS === 'android' ? 20 : 45, paddingBottom: 10, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingTop: Platform.OS === 'android' ? 15 : 10, // Adjusted for SafeAreaView
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
+  },
   backButton: { padding: 5, marginRight: 5 },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 8, backgroundColor: '#F5F5F5', borderRadius: 8, paddingHorizontal: 10, color: '#000000' },
   clearButton: { padding: 5, marginLeft: 5 },
@@ -230,7 +236,17 @@ const styles = StyleSheet.create({
   resultsTitle: { fontSize: 15, fontWeight: '600', paddingHorizontal: 15, paddingVertical: 12, color: '#333' },
   resultsListContainer: { paddingHorizontal: 10 },
   productResultItem: { flex: 0.5, backgroundColor: '#FFFFFF', borderRadius: 10, margin: 5, padding: 10, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, borderWidth: 1, borderColor: '#F0F0F0', justifyContent:'space-between' },
-  productResultImage: { width: '100%', height: 100, marginBottom: 8, borderRadius: 6 },
+  productResultImage: {
+    width: '100%',
+    height: 110,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  productImagePlaceholder: { // Style for placeholder if image is missing
+    backgroundColor: '#EFEFEF',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   productResultInfo:{ flexGrow: 1 },
   productResultName: { fontSize: 13, fontWeight: '600', marginBottom: 2, minHeight: 30, color: '#202020' },
   productResultWeight:{ fontSize: 11, color: '#606060', marginBottom: 4 },

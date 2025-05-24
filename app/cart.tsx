@@ -1,305 +1,475 @@
+import { ThemedText } from '@/components/ThemedText';
+import { Colors } from '@/constants/Colors';
+import { useAddress } from '@/contexts/AddressContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { CartItem, useCart } from '@/contexts/CartContext';
+import { ProductImageKeys, productImages } from '@/utils/imageMap';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import React from 'react';
 import {
-  StyleSheet,
-  View,
-  ScrollView,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  Platform,
-  Alert
+    ActivityIndicator,
+    Image,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    View
 } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
-import { useCart, CartItem } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const DELIVERY_CHARGE = 25;
-const HANDLING_CHARGE = 2;
+const DELIVERY_CHARGE_VALUE = 30;
+const HANDLING_CHARGE_VALUE = 9;
+const SMALL_CART_FEE_VALUE = 20;
+const SMALL_CART_THRESHOLD = 100;
 
 export default function CartScreen() {
   const router = useRouter();
-  const { cart, updateItemQuantity, totalCartItems, totalCartPrice, totalSavings } = useCart();
-  const { isAuthenticated } = useAuth(); // Get authentication state
+  const { cart, updateItemQuantity, totalCartItems, totalCartPrice, clearCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const { address, isLoadingAddress } = useAddress();
 
-  const calculatedItemsTotal = cart.reduce((sum, item) => {
-    const price = parseFloat(item.price.replace('₹', ''));
-    return sum + price * item.quantity;
-  }, 0);
+  const subTotal = totalCartPrice;
 
-  const actualDeliveryCharge = totalCartPrice > 0 ? DELIVERY_CHARGE : 0;
-  const actualHandlingCharge = totalCartPrice > 0 ? HANDLING_CHARGE : 0;
-  const grandTotal = totalCartPrice + actualDeliveryCharge + actualHandlingCharge;
+  const deliveryCharge = cart.length > 0 ? DELIVERY_CHARGE_VALUE : 0;
+  const handlingCharge = cart.length > 0 ? HANDLING_CHARGE_VALUE : 0;
+  const smallCartCharge = (cart.length > 0 && subTotal < SMALL_CART_THRESHOLD && subTotal > 0) ? SMALL_CART_FEE_VALUE : 0;
+  const savedAmount = 10;
+
+  const grandTotalCalculation = subTotal - savedAmount + deliveryCharge + handlingCharge + smallCartCharge;
+
+  const [isDonationChecked, setIsDonationChecked] = React.useState(true);
+  const finalGrandTotal = isDonationChecked && cart.length > 0 ? grandTotalCalculation + 1 : grandTotalCalculation;
 
   const handleProceed = () => {
     if (!isAuthenticated) {
       router.push('/login');
+    } else if (!address) {
+      router.push('/address' as any);
     } else {
-      // User is authenticated, proceed to checkout or next step
-      Alert.alert('Checkout', 'Proceeding to checkout (not yet implemented).');
-      console.log('User is authenticated, proceed to checkout with cart:', cart);
-      // Example: router.push('/checkout'); 
+      router.push('/payment' as any);
     }
   };
 
+  let proceedButtonText = 'Login to Proceed';
+  if (isAuthenticated) {
+    if (!address) {
+      proceedButtonText = 'Add Address';
+    } else {
+      proceedButtonText = 'Proceed To Pay';
+    }
+  }
+  if (isLoadingAddress && cart.length > 0) {
+    proceedButtonText = 'Loading...';
+    }
+
   const renderCartItem = ({ item }: { item: CartItem }) => (
     <View style={styles.cartItemContainer}>
-      <Image source={{ uri: item.image }} style={styles.cartItemImage} resizeMode="contain" />
+      <Image 
+        source={item.imageFileNames?.[0] ? productImages[item.imageFileNames[0] as ProductImageKeys] : {uri: 'https://via.placeholder.com/60x60.png?text=No+Image'}} 
+        style={styles.cartItemImage} 
+        resizeMode="contain" 
+      />
       <View style={styles.cartItemDetails}>
-        <ThemedText style={styles.cartItemName} numberOfLines={2}>{item.name}</ThemedText>
-        {item.weight && <ThemedText style={styles.cartItemWeight}>{item.weight}</ThemedText>}
+        <ThemedText style={styles.cartItemName} numberOfLines={1}>{item.name}</ThemedText>
+        <ThemedText style={styles.cartItemWeight}>{item.weight || '0.95-1.05 kg'}</ThemedText>
         <View style={styles.cartItemPriceRow}>
-          <ThemedText style={styles.cartItemPrice}>{item.price}</ThemedText>
-          {item.oldPrice && <ThemedText style={styles.cartItemOldPrice}>{item.oldPrice}</ThemedText>}
+          <ThemedText style={styles.cartItemPrice}>₹{item.price}</ThemedText>
+          {item.oldPrice && <ThemedText style={styles.cartItemOldPrice}>₹{item.oldPrice}</ThemedText>}
         </View>
       </View>
       <View style={styles.quantityControlContainer}>
-        <TouchableOpacity onPress={() => updateItemQuantity(item.id, item.quantity - 1)} style={styles.quantityButton}>
-          <Ionicons name="remove-circle-outline" size={28} color="#00A877" />
-        </TouchableOpacity>
+        <Pressable onPress={() => updateItemQuantity(item.id, item.quantity - 1)} style={styles.quantityButton}>
+          <Ionicons name="remove" size={20} color={Colors.light.tint} />
+        </Pressable>
         <ThemedText style={styles.quantityText}>{item.quantity}</ThemedText>
-        <TouchableOpacity onPress={() => updateItemQuantity(item.id, item.quantity + 1)} style={styles.quantityButton}>
-          <Ionicons name="add-circle-outline" size={28} color="#00A877" />
-        </TouchableOpacity>
+        <Pressable onPress={() => updateItemQuantity(item.id, item.quantity + 1)} style={styles.quantityButton}>
+          <Ionicons name="add" size={20} color={Colors.light.tint} />
+        </Pressable>
       </View>
     </View>
   );
 
+  if (isLoadingAddress && cart.length > 0) {
+    return (
+        <SafeAreaView style={[styles.container, styles.centeredLoadingContainer, {flex:1}]}>
+            <ActivityIndicator size="large" color={Colors.light.tint} />
+            <ThemedText>Loading address information...</ThemedText>
+        </SafeAreaView>
+    )
+  }
+
   return (
-    <ThemedView style={styles.container}>
+    <SafeAreaView style={[styles.container, {flex:1}]}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.headerContainer}>
         <ThemedText style={styles.headerTitle}>My Cart</ThemedText>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={28} color="#333" />
-        </TouchableOpacity>
+        <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.closeButton}>
+          <Ionicons name="close" size={28} color={Colors.light.text} />
+        </Pressable>
       </View>
 
       {cart.length === 0 ? (
         <View style={styles.emptyCartContainer}>
           <Ionicons name="cart-outline" size={80} color="#cccccc" />
           <ThemedText style={styles.emptyCartText}>Your cart is empty!</ThemedText>
-          <ThemedText style={styles.emptyCartSubText}>Looks like you haven't added anything to your cart yet.</ThemedText>
-          <TouchableOpacity style={styles.shopNowButton} onPress={() => router.replace('/(tabs)')}>
+          <ThemedText style={styles.emptyCartSubText}>Add items to your cart to see them here.</ThemedText>
+          <Pressable style={styles.shopNowButton} onPress={() => router.replace('/(tabs)')}>
             <ThemedText style={styles.shopNowButtonText}>Shop Now</ThemedText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       ) : (
-        <ScrollView style={styles.scrollViewContent} contentContainerStyle={styles.scrollContentContainerPadded}>
-          {totalSavings > 0 && (
-            <View style={styles.savingsBanner}>
-              <ThemedText style={styles.savingsBannerText}>Your total savings</ThemedText>
-              <ThemedText style={styles.savingsBannerAmount}>₹{totalSavings.toFixed(2)}</ThemedText>
+        <>
+          <ScrollView contentContainerStyle={styles.scrollContentContainerPadded}>
+            <View style={styles.sectionCard}>
+                <View style={styles.deliveryTimeRow}>
+                    <MaterialCommunityIcons name="timer-sand-empty" size={24} color={Colors.light.text} />
+                    <View style={{marginLeft: 10}}>
+                        <ThemedText style={styles.deliveryTimeTitle}>Delivery in 8 minutes</ThemedText>
+                        <ThemedText style={styles.deliveryTimeSubtitle}>Shipment of {totalCartItems} item{totalCartItems !== 1 ? 's' : ''}</ThemedText>
+                    </View>
             </View>
-          )}
-
-          <View style={styles.deliveryInfoContainer}>
-            <Ionicons name="alarm-outline" size={24} color="#000" />
-            <View style={styles.deliveryTextContainer}>
-              <ThemedText style={styles.deliveryTitle}>Delivery in 8 minutes</ThemedText>
-              <ThemedText style={styles.deliverySubtitle}>Shipment of {totalCartItems} item{totalCartItems > 1 ? 's' : ''}</ThemedText>
-            </View>
+                {cart.map((item, index) => <View key={item.id + index}>{renderCartItem({item})}</View>)} 
           </View>
 
-          <FlatList
-            data={cart}
-            renderItem={renderCartItem}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false} 
-            ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-            style={styles.cartItemsList}
-          />
-
-          <View style={styles.billDetailsContainer}>
-            <ThemedText style={styles.billTitle}>Bill details</ThemedText>
+            <View style={styles.sectionCard}>
+                <ThemedText style={styles.sectionTitle}>Bill details</ThemedText>
             <View style={styles.billRow}>
-              <View style={styles.billRowLeft}>
-                <Ionicons name="list-outline" size={18} color="#555" style={styles.billIcon} />
-                <ThemedText style={styles.billText}>Items total</ThemedText>
-                {totalSavings > 0 && <ThemedText style={styles.billSavedAmount}>(Saved ₹{totalSavings.toFixed(2)})</ThemedText>}
-              </View>
-              <View style={styles.billRowRightPrices}>
-                {totalSavings > 0 && <ThemedText style={styles.billOriginalPrice}>₹{(calculatedItemsTotal + totalSavings).toFixed(2)}</ThemedText>}
-                <ThemedText style={styles.billFinalPrice}>₹{calculatedItemsTotal.toFixed(2)}</ThemedText>
+                    <ThemedText style={styles.billTextLeft}>Sub total</ThemedText>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                        {savedAmount > 0 && <ThemedText style={styles.billSavedTag}>Saved ₹{savedAmount}</ThemedText>}
+                        <ThemedText style={styles.billTextRightStriked}>₹{(subTotal).toFixed(2)}</ThemedText> 
+                        <ThemedText style={styles.billTextRight}>₹{(subTotal - savedAmount).toFixed(2)}</ThemedText>
               </View>
             </View>
             <View style={styles.billRow}>
-              <View style={styles.billRowLeft}>
-                 <Ionicons name="bicycle-outline" size={18} color="#555" style={styles.billIcon} />
-                <ThemedText style={styles.billText}>Delivery charge</ThemedText>
-                <Ionicons name="information-circle-outline" size={14} color="#888" style={styles.infoIcon}/>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <ThemedText style={styles.billTextLeft}>Delivery charge</ThemedText>
+                        <Ionicons name="information-circle-outline" size={14} color={Colors.light.muted} style={{marginLeft: 4}}/>
+                    </View>
+                    <ThemedText style={styles.billTextRight}>₹{deliveryCharge.toFixed(2)}</ThemedText>
+                </View>
+                <View style={styles.billRow}>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <ThemedText style={styles.billTextLeft}>Handling charge</ThemedText>
+                        <Ionicons name="information-circle-outline" size={14} color={Colors.light.muted} style={{marginLeft: 4}}/>
+                    </View>
+                    <ThemedText style={styles.billTextRight}>₹{handlingCharge.toFixed(2)}</ThemedText>
+                </View>
+                {smallCartCharge > 0 && (
+                     <View style={styles.billRow}>
+                        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                            <ThemedText style={styles.billTextLeft}>Small cart charge</ThemedText>
+                            <Ionicons name="information-circle-outline" size={14} color={Colors.light.muted} style={{marginLeft: 4}}/>
+                        </View>
+                        <ThemedText style={styles.billTextRight}>₹{smallCartCharge.toFixed(2)}</ThemedText>
               </View>
-              {actualDeliveryCharge === 0 && totalCartPrice > 0 ? (
-                <ThemedText style={[styles.billFinalPrice, styles.freeDelivery]}>FREE</ThemedText>
-              ) : (
-                <ThemedText style={styles.billFinalPrice}>₹{actualDeliveryCharge.toFixed(2)}</ThemedText>
               )}
+                 <View style={[styles.billRow, styles.grandTotalRow]}>
+                    <ThemedText style={styles.grandTotalTextLeft}>Grand total</ThemedText>
+                    <ThemedText style={styles.grandTotalTextRight}>₹{grandTotalCalculation.toFixed(2)}</ThemedText>
+                </View>
             </View>
-            <View style={styles.billRow}>
-              <View style={styles.billRowLeft}>
-                <Ionicons name="bag-handle-outline" size={18} color="#555" style={styles.billIcon} />
-                <ThemedText style={styles.billText}>Handling charge</ThemedText>
-                <Ionicons name="information-circle-outline" size={14} color="#888" style={styles.infoIcon}/>
-              </View>
-              <ThemedText style={styles.billFinalPrice}>₹{actualHandlingCharge.toFixed(2)}</ThemedText>
-            </View>
-            <View style={styles.grandTotalRow}>
-              <ThemedText style={styles.grandTotalText}>Grand total</ThemedText>
-              <ThemedText style={styles.grandTotalPrice}>₹{grandTotal.toFixed(2)}</ThemedText>
-            </View>
-          </View>
-        </ScrollView>
-      )}
 
-      {cart.length > 0 && (
-        <View style={styles.proceedButtonContainer}>
-          <View style={styles.proceedPriceInfo}>
-            <ThemedText style={styles.proceedTotalPrice}>₹{grandTotal.toFixed(2)}</ThemedText>
-            <ThemedText style={styles.proceedTotalLabel}>TOTAL</ThemedText>
+            <View style={[styles.sectionCard, styles.donationSection]}>
+                <Image source={{ uri: 'https://jLilerflLtmoeスキンケア.com/shared/img/transfer/img_nodata_01.png' }} style={styles.donationImage} />
+                <View style={styles.donationTextContainer}>
+                    <ThemedText style={styles.donationTitle}>Feeding India donation</ThemedText>
+                    <ThemedText style={styles.donationSubtitle}>Working towards a malnutrition free India. Feeding India... <ThemedText style={styles.readMore}>read more</ThemedText></ThemedText>
+                </View>
+                <View style={styles.donationCheckboxContainer}>
+                    <ThemedText style={styles.donationAmount}>₹1</ThemedText>
+                    <Pressable onPress={() => setIsDonationChecked(!isDonationChecked)} 
+                        style={[styles.checkboxBase, isDonationChecked && styles.checkboxChecked]}>
+                        {isDonationChecked && <Ionicons name="checkmark" size={16} color={Colors.dark.text} />}
+                    </Pressable>
+              </View>
+            </View>
+
+          </ScrollView>
+
+          <View style={styles.footerContainer}>
+            {isAuthenticated && address && cart.length > 0 && (
+                <View style={styles.deliveryAddressContainer}>
+                    <Ionicons name="location-outline" size={20} color={Colors.light.tint} />
+                    <ThemedText style={styles.deliveryAddressText} numberOfLines={1}>
+                        Delivering to <ThemedText style={{fontWeight: 'bold'}}>{address.addressType} - {address.houseNo}, {address.area.split(',')[0]}</ThemedText>
+                    </ThemedText>
+                    <Pressable onPress={() => router.push('/address' as any)}>
+                        <ThemedText style={styles.changeAddressButton}>Change</ThemedText>
+                    </Pressable>
+                </View>
+            )}
+            <View style={styles.totalSummaryContainer}>
+                <View style={styles.proceedPriceContainer}>
+                    <ThemedText style={styles.grandTotalFooterText}>₹{finalGrandTotal.toFixed(2)}</ThemedText>
+                    <ThemedText style={styles.proceedTotalLabel}>TOTAL</ThemedText>
+                </View>
+                <Pressable 
+                    style={[styles.proceedButton, (isLoadingAddress && cart.length > 0 || (isAuthenticated && !address && cart.length > 0)) && styles.proceedButtonLoading ]}
+                    onPress={handleProceed} 
+                    disabled={(isLoadingAddress && cart.length > 0) || cart.length === 0}
+                >
+                    <ThemedText style={styles.proceedButtonText}>{proceedButtonText}</ThemedText>
+                    {/* Show chevron only if not loading and cart is not empty */}
+                    {!(isLoadingAddress && cart.length > 0) && cart.length > 0 && <Ionicons name="chevron-forward-outline" size={20} color={Colors.dark.text} style={{marginLeft: 5}} />}
+                </Pressable>
+            </View>
           </View>
-          <TouchableOpacity style={styles.proceedButton} onPress={handleProceed}>
-            <ThemedText style={styles.proceedButtonText}>
-              {isAuthenticated ? 'Proceed to Checkout' : 'Login to Proceed'}
-            </ThemedText>
-            <Ionicons name="chevron-forward-outline" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
+        </>
       )}
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+  },
+  centeredLoadingContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+  },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'android' ? 25 : 50,
-    paddingBottom: 15,
     paddingHorizontal: 15,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: Colors.light.border,
+    backgroundColor: Colors.light.background, // Added background to header
   },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A' },
-  closeButton: { padding: 5 },
-  scrollViewContent: { flex: 1 }, // For the main scrollable area
-  scrollContentContainerPadded: { paddingBottom: 80 }, // Padding for the sticky proceed button
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: Colors.light.text },
+  closeButton: { padding: 5 }, // Added padding for easier touch
+  scrollContentContainerPadded: { paddingHorizontal: 15, paddingBottom: 20 }, 
   emptyCartContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 30,
   },
-  emptyCartText: { fontSize: 20, fontWeight: '600', color: '#333', marginTop: 20 },
-  emptyCartSubText: { fontSize: 14, color: '#666', textAlign: 'center', marginTop: 8, marginBottom: 25 },
-  shopNowButton: { backgroundColor: '#00A877', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 8 },
-  shopNowButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  savingsBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#E3F2FD', 
-    paddingHorizontal: 15,
+  emptyCartText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  emptyCartSubText: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 25,
+  },
+  shopNowButton: {
+    backgroundColor: Colors.light.tint,
     paddingVertical: 12,
-    marginHorizontal: 15,
-    marginTop: 15,
+    paddingHorizontal: 30,
     borderRadius: 8,
   },
-  savingsBannerText: { fontSize: 15, color: '#0D47A1', fontWeight: '600' }, 
-  savingsBannerAmount: { fontSize: 15, color: '#0D47A1', fontWeight: 'bold' },
-  deliveryInfoContainer: {
+  shopNowButtonText: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  sectionCard: {
+    backgroundColor: Colors.light.background, // Ensuring card bg is white or light
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 2.62,
+    elevation: 3,
+  },
+  deliveryTimeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 15,
-    marginHorizontal: 15,
-    marginTop: 10,
-    borderRadius: 8,
-    elevation: 1, 
-    shadowColor: '#000', 
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    marginBottom: 15,
   },
-  deliveryTextContainer: { marginLeft: 12 },
-  deliveryTitle: { fontSize: 16, fontWeight: 'bold', color: '#1A1A1A' },
-  deliverySubtitle: { fontSize: 13, color: '#555555', marginTop: 2 },
-  cartItemsList: {
-    marginHorizontal: 15,
-    marginTop: 10,
-    // No fixed height, should grow with content within ScrollView
+  deliveryTimeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: Colors.light.text,
+  },
+  deliveryTimeSubtitle: {
+    fontSize: 13,
+    color: Colors.light.muted,
   },
   cartItemContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 15,
-    paddingHorizontal: 10, // Reduced horizontal padding for more space
-    borderRadius: 8,
     alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
   },
-  itemSeparator: {
-    height: 10,
-    backgroundColor: '#F5F5F5', // Separator color matches background
-    marginHorizontal: 15, // Align with card margins
+  cartItemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.border, // Added border to image
   },
-  cartItemImage: { width: 60, height: 60, borderRadius: 8, marginRight: 10 },
-  cartItemDetails: { flex: 1, justifyContent: 'center' },
-  cartItemName: { fontSize: 14, fontWeight: '600', color: '#202020', marginBottom: 2 },
-  cartItemWeight: { fontSize: 12, color: '#666666', marginBottom: 4 },
+  cartItemDetails: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  cartItemName: { fontSize: 15, fontWeight: '500', color: Colors.light.text, marginBottom: 3 },
+  cartItemWeight: { fontSize: 12, color: Colors.light.muted, marginBottom: 4 },
   cartItemPriceRow: { flexDirection: 'row', alignItems: 'center' },
-  cartItemPrice: { fontSize: 14, fontWeight: 'bold', color: '#1A1A1A' },
-  cartItemOldPrice: { fontSize: 12, color: '#808080', textDecorationLine: 'line-through', marginLeft: 8 },
+  cartItemPrice: { fontSize: 14, fontWeight: 'bold', color: Colors.light.text },
+  cartItemOldPrice: { fontSize: 12, color: Colors.light.muted, textDecorationLine: 'line-through', marginLeft: 6 },
   quantityControlContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF', 
-    borderColor: '#00A877',
-    borderWidth: 1.5,
-    borderRadius: 8,
-    // paddingVertical: 0, // Adjusted for icon buttons
-    // paddingHorizontal: 0,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 20,
   },
-  quantityButton: { paddingHorizontal: 8, paddingVertical: 4 }, 
-  quantityText: { fontSize: 15, fontWeight: 'bold', color: '#00A877', marginHorizontal: 10 }, 
-  billDetailsContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: 15,
-    marginHorizontal: 15,
-    marginTop: 15,
-    marginBottom: 20, 
-    borderRadius: 8,
+  quantityButton: {
+    padding: 8, // Increased padding for easier touch
   },
-  billTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: '#1A1A1A' },
-  billRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  billRowLeft: {flexDirection: 'row', alignItems: 'center'},
-  billIcon: {marginRight: 8},
-  billText: { fontSize: 14, color: '#444444' },
-  billSavedAmount: { fontSize: 13, color: '#00A877', marginLeft: 6, fontWeight: '500' },
-  billRowRightPrices: {flexDirection: 'row', alignItems: 'baseline'},
-  billOriginalPrice: {fontSize: 13, color: '#808080', textDecorationLine: 'line-through', marginRight: 8},
-  billFinalPrice: { fontSize: 14, fontWeight: '600', color: '#1A1A1A' },
-  freeDelivery: { color: '#00A877', fontWeight: 'bold'},
-  infoIcon: { marginLeft: 4},
-  grandTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#E0E0E0', paddingTop: 12, marginTop: 8 },
-  grandTotalText: { fontSize: 17, fontWeight: 'bold', color: '#1A1A1A' },
-  grandTotalPrice: { fontSize: 17, fontWeight: 'bold', color: '#1A1A1A' },
-  proceedButtonContainer: {
+  quantityText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: Colors.light.tint,
+    marginHorizontal: 12,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: Colors.light.text,
+    marginBottom: 12,
+  },
+  billRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#00A877',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    // Ensure it's above any native tab bar if one were visible
-    // position: 'absolute', bottom: 0, left: 0, right: 0, // Make it sticky if not using portal/modal for cart
+    paddingVertical: 7,
   },
-  proceedPriceInfo: {},
-  proceedTotalPrice: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' },
-  proceedTotalLabel: { color: '#E0E0E0', fontSize: 11, fontWeight: '500' }, 
-  proceedButton: { flexDirection: 'row', alignItems: 'center' },
-  proceedButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', marginRight: 6 },
+  billTextLeft: { fontSize: 14, color: Colors.light.text },
+  billTextRight: { fontSize: 14, color: Colors.light.text, fontWeight: '500' },
+  billTextRightStriked: { fontSize: 13, color: Colors.light.muted, textDecorationLine: 'line-through', marginRight: 6 },
+  billSavedTag: {
+      backgroundColor: '#E6F6F1', // light green
+      color: Colors.light.tint,
+      fontSize: 11,
+      fontWeight: 'bold',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      marginRight: 8
+  },
+  grandTotalRow: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+    marginTop: 8,
+    paddingTop: 10,
+  },
+  grandTotalTextLeft: { fontSize: 16, fontWeight: 'bold', color: Colors.light.text },
+  grandTotalTextRight: { fontSize: 16, fontWeight: 'bold', color: Colors.light.text },
+  donationSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12, // Reduced padding
+  },
+  donationImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    marginRight: 12,
+    backgroundColor: Colors.light.border, // Placeholder BG
+  },
+  donationTextContainer: {
+    flex: 1,
+  },
+  donationTitle: { fontSize: 14, fontWeight: 'bold', color: Colors.light.text, marginBottom: 2 },
+  donationSubtitle: { fontSize: 11, color: Colors.light.muted, lineHeight: 15 },
+  readMore: { color: Colors.light.tint, fontWeight: 'bold', fontSize: 11 },
+  donationCheckboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10, 
+  },
+  donationAmount: { fontSize: 14, fontWeight: 'bold', color: Colors.light.text, marginRight: 8 },
+  checkboxBase: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: Colors.light.muted,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: Colors.light.tint,
+    borderColor: Colors.light.tint,
+  },
+  footerContainer: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+    paddingHorizontal: 15,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 25 : 12, // More padding for iOS home indicator
+    backgroundColor: Colors.light.background, 
+  },
+  deliveryAddressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  deliveryAddressText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 13,
+    color: Colors.light.text,
+  },
+  changeAddressButton: {
+    color: Colors.light.tint,
+    fontWeight: 'bold',
+    fontSize: 13,
+    paddingLeft: 10, // Make it easier to tap
+  },
+  totalSummaryContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+  },
+  proceedPriceContainer: {
+      alignItems: 'flex-start',
+  },
+  grandTotalFooterText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.light.text,
+  },
+  proceedTotalLabel: {
+      fontSize: 10,
+      color: Colors.light.muted,
+      fontWeight: '600',
+  },
+  proceedButton: {
+    backgroundColor: Colors.light.tint,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: 150, // Give button some width
+  },
+  proceedButtonLoading: {
+      backgroundColor: Colors.light.muted, 
+  },
+  proceedButtonText: { color: Colors.dark.text, fontSize: 16, fontWeight: 'bold' },
 });

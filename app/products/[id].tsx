@@ -6,20 +6,21 @@ import { useCart } from '@/contexts/CartContext';
 import { getProductById, allProducts as originalAllProducts, Product } from '@/data/products';
 import { ProductImageKeys, productImages } from '@/utils/imageMap';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  Image,
-  Platform,
-  ScrollView,
-  Share,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    Platform,
+    Pressable,
+    ScrollView,
+    Share,
+    StyleSheet,
+    View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -73,9 +74,9 @@ export default function ProductDetailScreen() {
 
   useEffect(() => {
     const fetchProductData = async () => {
-      if (id) {
+    if (id) {
         setIsLoading(true);
-        const foundProduct = getProductById(id);
+      const foundProduct = getProductById(id);
         setProduct(foundProduct || null);
         
         if (foundProduct) {
@@ -86,10 +87,10 @@ export default function ProductDetailScreen() {
         } else {
           setRelatedProducts([]);
         }
-      } else {
+    } else {
         setProduct(null);
         setRelatedProducts([]);
-      }
+    }
       setIsLoading(false);
     };
 
@@ -126,16 +127,17 @@ export default function ProductDetailScreen() {
 
   if (isLoading) {
     return (
-      <ThemedView style={[styles.container, { backgroundColor: themedBackgroundColor, paddingTop: Platform.OS === 'android' ? 30 : 50 }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themedBackgroundColor, flex:1 }]}>
         <ScrollView contentContainerStyle={styles.scrollContentContainerShimmer}>
           {/* Header Shimmer (Simplified) */}
-          <View style={[styles.header, dynamicStyles.header, {justifyContent: 'space-between'}]}>
-            <ShimmerPlaceholder width={30} height={30} borderRadius={15} />
+          <View style={[styles.header, dynamicStyles.header, {justifyContent: 'space-between', marginTop: Platform.OS === 'android' ? 10: 0 }]}>
+            <Pressable onPress={() => router.back()} style={styles.headerButton}>
+              <Ionicons name="arrow-back" size={26} color={iconColor} />
+            </Pressable>
             <View style={{alignItems: 'center'}}>
                 <ShimmerPlaceholder width={150} height={20} borderRadius={4} style={{marginBottom: 5}} />
                 <ShimmerPlaceholder width={100} height={16} borderRadius={4} />
             </View>
-            <ShimmerPlaceholder width={30} height={30} borderRadius={15} />
           </View>
 
           {/* Image Carousel Shimmer */}
@@ -174,7 +176,7 @@ export default function ProductDetailScreen() {
           </View>
 
         </ScrollView>
-      </ThemedView>
+      </SafeAreaView>
     );
   }
 
@@ -182,9 +184,9 @@ export default function ProductDetailScreen() {
     return (
       <ThemedView style={[styles.containerCentered, { backgroundColor: themedBackgroundColor }]}>
         <ThemedText style={[styles.title, { color: themedTextColor }]}>Product Not Found</ThemedText>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.goBackButton, { backgroundColor: tintColor }]}>
+        <Pressable onPress={() => router.back()} style={[styles.goBackButton, { backgroundColor: tintColor }]}>
           <ThemedText style={{ color: Colors.dark.text }}>Go Back</ThemedText>
-        </TouchableOpacity>
+        </Pressable>
       </ThemedView>
     );
   }
@@ -207,77 +209,69 @@ export default function ProductDetailScreen() {
       removeItemFromCart(productId);
     }
   };
-  
+
   const renderRelatedProduct = ({ item }: { item: Product }) => {
     const relatedItemQuantity = getItemQuantity(item.id);
-    const imageFilename = item.imageFileNames?.[0];
-    const relatedImageSource = imageFilename ? productImages[imageFilename as ProductImageKeys] : undefined;
+    const relatedImageFilename = item.imageFileNames?.[0];
+    const relatedImageSource = relatedImageFilename ? productImages[relatedImageFilename as ProductImageKeys] : undefined;
 
-    const shimmerImageWidth = typeof styles.relatedProductImage.width === 'string' 
-                              ? Math.floor((screenWidth / 2.5) * 0.9)
-                              : styles.relatedProductImage.width;
-    const shimmerImageHeight = styles.relatedProductImage.height as number || 100;
+    const shimmerImageWidth = typeof styles.relatedProductImage.width === 'number' ? styles.relatedProductImage.width : 100; 
+    const shimmerImageHeight = typeof styles.relatedProductImage.height === 'number' ? styles.relatedProductImage.height : 100;
+    const shimmerImageBorderRadius = typeof styles.relatedProductImage.borderRadius === 'number' ? styles.relatedProductImage.borderRadius : 8;
 
     return (
-      <View style={[styles.relatedProductCard, dynamicStyles.relatedProductCard]}>
-        {item.discount && (
-          <View style={[styles.discountBadge, { backgroundColor: lightGreenBackground }]}>
-            <ThemedText style={[styles.discountText, { color: greenColor }]}>{item.discount}</ThemedText>
-          </View>
-        )}
-        {relatedImageSource ? 
-            <Image source={relatedImageSource} style={styles.relatedProductImage} /> 
-            : <ShimmerPlaceholder 
-                width={shimmerImageWidth} 
-                height={shimmerImageHeight} 
-                borderRadius={4} 
-                style={{marginBottom: 8}} />
-        }
-        <View style={styles.relatedProductInfo}>
-            <ThemedText numberOfLines={1} style={[styles.relatedProductName, {color: themedTextColor}]}>{item.name}</ThemedText>
-            <ThemedText style={[styles.relatedProductWeight, {color: mutedTextColor}]}>{item.deliveryTime}</ThemedText>
-            <ThemedText style={[styles.relatedProductWeight, {color: mutedTextColor}]}>{item.weight}</ThemedText>
-             <View style={styles.relatedProductPriceContainer}>
-                <ThemedText style={[styles.relatedProductPrice, {color: themedTextColor}]}>{item.price}</ThemedText>
-                {item.oldPrice && <ThemedText style={[styles.relatedProductOldPrice, {color: mutedTextColor}]}>{item.oldPrice}</ThemedText>}
+      <Link href={{ pathname: "/products/[id]", params: { id: item.id } }} asChild>
+        <Pressable style={[styles.relatedProductCard, dynamicStyles.relatedProductCard]}>
+          {item.discount && (
+            <View style={[styles.discountBadge, { backgroundColor: lightGreenBackground }]}>
+              <ThemedText style={[styles.discountText, { color: greenColor }]}>{item.discount}</ThemedText>
             </View>
-        </View>
-        {relatedItemQuantity > 0 ? (
-          <View style={styles.relatedQuantityControl}>
-            <TouchableOpacity onPress={() => handleDecreaseQuantity(item.id)} style={styles.relatedQuantityButton}>
-              <Ionicons name="remove" size={20} color={greenColor} />
-            </TouchableOpacity>
-            <ThemedText style={[styles.relatedQuantityText, {color: greenColor}]}>{relatedItemQuantity}</ThemedText>
-            <TouchableOpacity onPress={() => handleIncreaseQuantity(item.id)} style={styles.relatedQuantityButton}>
-              <Ionicons name="add" size={20} color={greenColor} />
-            </TouchableOpacity>
+          )}
+          {relatedImageSource ? (
+            <Image source={relatedImageSource} style={styles.relatedProductImage} resizeMode="contain"/>
+          ) : (
+            <View style={styles.relatedProductImage}> 
+              <ShimmerPlaceholder width={shimmerImageWidth * 0.9} height={shimmerImageHeight * 0.9} borderRadius={shimmerImageBorderRadius}/>
+            </View>
+          )}
+          <ThemedText style={[styles.relatedProductName, {color: themedTextColor}]} numberOfLines={2}>{item.name}</ThemedText>
+          <ThemedText style={[styles.relatedProductWeight, {color: mutedTextColor}]}>{item.weight}</ThemedText>
+          <View style={styles.relatedProductPriceRow}>
+            <ThemedText style={styles.relatedProductPrice}>{item.price}</ThemedText>
+            {relatedItemQuantity > 0 ? (
+              <View style={styles.relatedQuantityControl}>
+                <Pressable onPress={() => handleDecreaseQuantity(item.id)} style={styles.relatedQuantityButton}>
+                  <Ionicons name="remove" size={20} color={greenColor} />
+                </Pressable>
+                <ThemedText style={[styles.relatedQuantityText, {color: greenColor}]}>{relatedItemQuantity}</ThemedText>
+                <Pressable onPress={() => handleIncreaseQuantity(item.id)} style={styles.relatedQuantityButton}>
+                  <Ionicons name="add" size={20} color={greenColor} />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable style={styles.relatedAddButton} onPress={() => handleAddItem(item)}>
+                <ThemedText style={styles.relatedAddButtonText}>ADD</ThemedText>
+              </Pressable>
+            )}
           </View>
-        ) : (
-          <TouchableOpacity style={styles.relatedAddButton} onPress={() => handleAddItem(item)}>
-            <ThemedText style={styles.relatedAddButtonText}>ADD</ThemedText>
-          </TouchableOpacity>
-        )}
-      </View>
+        </Pressable>
+      </Link>
     );
   };
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor: themedBackgroundColor }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: themedBackgroundColor, flex:1 }]}>
       <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-        <View style={[styles.header, dynamicStyles.header]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-            <Ionicons name="arrow-back" size={28} color={iconColor} />
-          </TouchableOpacity>
-          <View style={styles.headerDeliveryInfo}>
-            <ThemedText style={[styles.headerDeliveryTitle, {color: themedTextColor}]}>Delivery in {product?.deliveryTime || '...'}</ThemedText>
-            <View style={styles.headerLocationContainer}>
-              <ThemedText style={[styles.headerLocationText, {color: mutedTextColor}]}>Freedom Fighters Enclave...</ThemedText>
-              <Ionicons name="chevron-down" size={16} color={mutedTextColor} />
-            </View>
+        <View style={[styles.header, dynamicStyles.header, {marginTop: Platform.OS === 'android' ? 10: 0}]}>
+          <Pressable onPress={() => router.back()} style={styles.headerButton}>
+            <Ionicons name="arrow-back" size={26} color={iconColor} />
+          </Pressable>
+          
+          <View style={styles.headerTitleContainer}>
+              <ThemedText style={[styles.headerTitle, { color: themedTextColor }]} numberOfLines={1} ellipsizeMode="tail">
+                {product.name}
+              </ThemedText>
           </View>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="search" size={26} color={iconColor} />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.carouselContainer}>
@@ -320,11 +314,11 @@ export default function ProductDetailScreen() {
           <View style={[styles.sectionContainer, { backgroundColor: cardBackgroundColor}]}>
             <View style={styles.mainInfoRow}>
               <ThemedText style={[styles.productName, {color: themedTextColor}]}>{product.name}</ThemedText>
-              <TouchableOpacity onPress={handleShare} style={styles.shareIconContainer}>
+              <Pressable onPress={handleShare} style={styles.shareIconContainer}>
                 <Ionicons name="share-social-outline" size={24} color={iconColor} />
-              </TouchableOpacity>
-            </View>
-            
+              </Pressable>
+          </View>
+
             <ThemedText style={[styles.deliveryTimeTextSmall, {color: mutedTextColor}]}>
                <MaterialCommunityIcons name="timer-sand-empty" size={14} color={mutedTextColor} /> {product.deliveryTime}
             </ThemedText>
@@ -333,10 +327,10 @@ export default function ProductDetailScreen() {
               <View style={[styles.brandContainer, dynamicStyles.brandContainer]}>
                   <Image source={{ uri: product.brandLogoUrl }} style={styles.brandLogo} />
                   <ThemedText style={[styles.brandName, { color: themedTextColor }]}>{product.brand}</ThemedText>
-                  <TouchableOpacity style={styles.exploreProductsLink}>
+                  <Pressable style={styles.exploreProductsLink}>
                       <ThemedText style={[styles.exploreProductsText, { color: tintColor }]}>Explore all products</ThemedText>
                       <Ionicons name="chevron-forward" size={16} color={tintColor} />
-                  </TouchableOpacity>
+                  </Pressable>
               </View>
             )}
             
@@ -355,18 +349,18 @@ export default function ProductDetailScreen() {
 
             {quantityInCart > 0 ? (
               <View style={styles.quantityControl}>
-                <TouchableOpacity onPress={() => handleDecreaseQuantity(product.id)} style={styles.quantityButton}>
+                <Pressable onPress={() => handleDecreaseQuantity(product.id)} style={styles.quantityButton}>
                   <Ionicons name="remove" size={24} color={greenColor} />
-                </TouchableOpacity>
+                </Pressable>
                 <ThemedText style={[styles.quantityText, {color: greenColor}]}>{quantityInCart}</ThemedText>
-                <TouchableOpacity onPress={() => handleIncreaseQuantity(product.id)} style={styles.quantityButton}>
+                <Pressable onPress={() => handleIncreaseQuantity(product.id)} style={styles.quantityButton}>
                   <Ionicons name="add" size={24} color={greenColor} />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             ) : (
-              <TouchableOpacity style={[styles.addToCartButton, { backgroundColor: greenColor }]} onPress={() => handleAddItem(product)}>
+              <Pressable style={[styles.addToCartButton, { backgroundColor: greenColor }]} onPress={() => handleAddItem(product)}>
                 <ThemedText style={styles.addToCartButtonText}>Add to cart</ThemedText>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         )}
@@ -399,11 +393,11 @@ export default function ProductDetailScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.relatedProductsList}
             />
-          </View>
+        </View>
         )}
 
       </ScrollView>
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
@@ -445,19 +439,14 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: 5,
   },
-  headerDeliveryInfo: {
+  headerTitleContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  headerDeliveryTitle: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-  },
-  headerLocationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerLocationText: {
-    fontSize: 13,
   },
   carouselContainer: {
   },
@@ -677,25 +666,22 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   relatedProductWeight: {
-    fontSize: 12,
+    fontSize: 11,
+    color: Colors.light.muted,
     marginBottom: 4,
   },
-  relatedProductPriceContainer: {
+  relatedProductPriceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    marginTop: 8,
   },
   relatedProductPrice: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginRight: 4,
-  },
-  relatedProductOldPrice: {
-    fontSize: 11,
-    textDecorationLine: 'line-through',
   },
   relatedAddButton: {
-    backgroundColor: '#28a745',
+    borderColor: Colors.light.tint,
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: 'center',

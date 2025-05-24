@@ -1,4 +1,4 @@
-package com.hotel.grocer
+package com.anonymous.hotelgrocer
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

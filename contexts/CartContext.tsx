@@ -12,8 +12,8 @@ export interface CartItem extends AppProduct {
 interface CartContextType {
   cart: CartItem[];
   setCart: Dispatch<SetStateAction<CartItem[]>>; 
-  addItemToCart: (product: AppProduct) => void; // Use AppProduct here
-  decrementItemFromCart: (product: AppProduct) => void; // Use AppProduct here
+  addItemToCart: (product: AppProduct) => void;
+  decrementItemFromCart: (product: AppProduct) => void;
   removeItemFromCart: (productId: string) => void;
   updateItemQuantity: (productId: string, quantity: number) => void;
   getItemQuantity: (productId: string) => number;
