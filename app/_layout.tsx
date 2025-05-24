@@ -13,6 +13,7 @@ import '../firebaseConfig';
 import { AddressProvider } from '@/contexts/AddressContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
+import FloatingCartView from '@/components/FloatingCartView'; // Import FloatingCartView
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 console.log('[_layout.tsx] SplashScreen.preventAutoHideAsync() called.');
@@ -94,6 +95,7 @@ export default function RootLayout() {
                 <Stack.Screen name="+not-found" />
               </Stack>
               <StatusBar style="dark" translucent={false} />
+              <FloatingCartView /> 
             </ThemeProvider>
           </AddressProvider>
         </CartProvider>

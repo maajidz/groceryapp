@@ -8,13 +8,13 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    View
+  ActivityIndicator,
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,16 +25,15 @@ const SMALL_CART_THRESHOLD = 100;
 
 export default function CartScreen() {
   const router = useRouter();
-  const { cart, updateItemQuantity, totalCartItems, totalCartPrice, clearCart } = useCart();
+  const { cart, updateItemQuantity, totalCartItems, totalCartPrice } = useCart(); // Removed clearCart as it's not used in this view now
   const { isAuthenticated } = useAuth();
   const { address, isLoadingAddress } = useAddress();
 
   const subTotal = totalCartPrice;
-
   const deliveryCharge = cart.length > 0 ? DELIVERY_CHARGE_VALUE : 0;
   const handlingCharge = cart.length > 0 ? HANDLING_CHARGE_VALUE : 0;
   const smallCartCharge = (cart.length > 0 && subTotal < SMALL_CART_THRESHOLD && subTotal > 0) ? SMALL_CART_FEE_VALUE : 0;
-  const savedAmount = 10;
+  const savedAmount = 10; // Assuming this is a general saving
 
   const grandTotalCalculation = subTotal - savedAmount + deliveryCharge + handlingCharge + smallCartCharge;
 
@@ -61,7 +60,7 @@ export default function CartScreen() {
   }
   if (isLoadingAddress && cart.length > 0) {
     proceedButtonText = 'Loading...';
-    }
+  }
 
   const renderCartItem = ({ item }: { item: CartItem }) => (
     <View style={styles.cartItemContainer}>
@@ -90,7 +89,7 @@ export default function CartScreen() {
     </View>
   );
 
-  if (isLoadingAddress && cart.length > 0) {
+  if (isLoadingAddress && cart.length > 0 && !address) { // Show loading only if address is being fetched and not yet available
     return (
         <SafeAreaView style={[styles.container, styles.centeredLoadingContainer, {flex:1}]}>
             <ActivityIndicator size="large" color={Colors.light.tint} />
@@ -185,43 +184,44 @@ export default function CartScreen() {
                     </Pressable>
               </View>
             </View>
-
-          </ScrollView>
-
-          <View style={styles.footerContainer}>
-            {isAuthenticated && address && cart.length > 0 && (
-                <View style={styles.deliveryAddressContainer}>
-                    <Ionicons name="location-outline" size={20} color={Colors.light.tint} />
-                    <ThemedText style={styles.deliveryAddressText} numberOfLines={1}>
-                        Delivering to <ThemedText style={{fontWeight: 'bold'}}>{address.addressType} - {address.houseNo}, {address.area.split(',')[0]}</ThemedText>
-                    </ThemedText>
-                    <Pressable onPress={() => router.push('/address' as any)}>
-                        <ThemedText style={styles.changeAddressButton}>Change</ThemedText>
+            {/* Footer section for proceed button, address etc. is now part of FloatingCartView or directly below for this page */}
+            <View style={styles.cartScreenFooterContainer}>
+                 {isAuthenticated && address && cart.length > 0 && (
+                    <View style={styles.deliveryAddressContainer}>
+                        <Ionicons name="location-outline" size={20} color={Colors.light.tint} />
+                        <ThemedText style={styles.deliveryAddressText} numberOfLines={1}>
+                            Delivering to <ThemedText style={{fontWeight: 'bold'}}>{address.addressType} - {address.houseNo}, {address.area.split(',')[0]}</ThemedText>
+                        </ThemedText>
+                        <Pressable onPress={() => router.push('/address' as any)}>
+                            <ThemedText style={styles.changeAddressButton}>Change</ThemedText>
+                        </Pressable>
+                    </View>
+                )}
+                <View style={styles.totalSummaryContainer}>
+                    <View style={styles.proceedPriceContainer}>
+                        <ThemedText style={styles.grandTotalFooterText}>₹{finalGrandTotal.toFixed(2)}</ThemedText>
+                        <ThemedText style={styles.proceedTotalLabel}>GRAND TOTAL</ThemedText>
+                    </View>
+                    <Pressable 
+                        style={[styles.proceedButton, (isLoadingAddress && cart.length > 0 && !address) && styles.proceedButtonLoading ]}
+                        onPress={handleProceed} 
+                        disabled={(isLoadingAddress && cart.length > 0 && !address) || cart.length === 0}
+                    >
+                        <ThemedText style={styles.proceedButtonText}>{proceedButtonText}</ThemedText>
+                        {!(isLoadingAddress && cart.length > 0 && !address) && cart.length > 0 && <Ionicons name="chevron-forward-outline" size={20} color={Colors.dark.text} style={{marginLeft: 5}} />}
                     </Pressable>
                 </View>
-            )}
-            <View style={styles.totalSummaryContainer}>
-                <View style={styles.proceedPriceContainer}>
-                    <ThemedText style={styles.grandTotalFooterText}>₹{finalGrandTotal.toFixed(2)}</ThemedText>
-                    <ThemedText style={styles.proceedTotalLabel}>TOTAL</ThemedText>
-                </View>
-                <Pressable 
-                    style={[styles.proceedButton, (isLoadingAddress && cart.length > 0 || (isAuthenticated && !address && cart.length > 0)) && styles.proceedButtonLoading ]}
-                    onPress={handleProceed} 
-                    disabled={(isLoadingAddress && cart.length > 0) || cart.length === 0}
-                >
-                    <ThemedText style={styles.proceedButtonText}>{proceedButtonText}</ThemedText>
-                    {/* Show chevron only if not loading and cart is not empty */}
-                    {!(isLoadingAddress && cart.length > 0) && cart.length > 0 && <Ionicons name="chevron-forward-outline" size={20} color={Colors.dark.text} style={{marginLeft: 5}} />}
-                </Pressable>
             </View>
-          </View>
+
+          </ScrollView>
         </>
       )}
     </SafeAreaView>
   );
 }
 
+// Styles are largely the same, just removing footer specific styles that are now in FloatingCartView.tsx
+// and adding styles for the new cartScreenFooterContainer
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -239,10 +239,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
-    backgroundColor: Colors.light.background, // Added background to header
+    backgroundColor: Colors.light.background, 
   },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: Colors.light.text },
-  closeButton: { padding: 5 }, // Added padding for easier touch
+  closeButton: { padding: 5 }, 
   scrollContentContainerPadded: { paddingHorizontal: 15, paddingBottom: 20 }, 
   emptyCartContainer: {
     flex: 1,
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sectionCard: {
-    backgroundColor: Colors.light.background, // Ensuring card bg is white or light
+    backgroundColor: Colors.light.background, 
     borderRadius: 12,
     padding: 15,
     marginBottom: 15,
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: Colors.light.border, // Added border to image
+    borderColor: Colors.light.border, 
   },
   cartItemDetails: {
     flex: 1,
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   quantityButton: {
-    padding: 8, // Increased padding for easier touch
+    padding: 8, 
   },
   quantityText: {
     fontSize: 14,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   billTextRight: { fontSize: 14, color: Colors.light.text, fontWeight: '500' },
   billTextRightStriked: { fontSize: 13, color: Colors.light.muted, textDecorationLine: 'line-through', marginRight: 6 },
   billSavedTag: {
-      backgroundColor: '#E6F6F1', // light green
+      backgroundColor: '#E6F6F1', 
       color: Colors.light.tint,
       fontSize: 11,
       fontWeight: 'bold',
@@ -378,14 +378,14 @@ const styles = StyleSheet.create({
   donationSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12, // Reduced padding
+    paddingVertical: 12, 
   },
   donationImage: {
     width: 40,
     height: 40,
     borderRadius: 6,
     marginRight: 12,
-    backgroundColor: Colors.light.border, // Placeholder BG
+    backgroundColor: Colors.light.border, 
   },
   donationTextContainer: {
     flex: 1,
@@ -412,12 +412,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.tint,
     borderColor: Colors.light.tint,
   },
-  footerContainer: {
+  // Styles for the footer content that remains on the cart page itself
+  cartScreenFooterContainer: {
     borderTopWidth: 1,
     borderTopColor: Colors.light.border,
     paddingHorizontal: 15,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 25 : 12, // More padding for iOS home indicator
+    paddingBottom: Platform.OS === 'ios' ? 25 : 12, 
     backgroundColor: Colors.light.background, 
   },
   deliveryAddressContainer: {
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
     color: Colors.light.tint,
     fontWeight: 'bold',
     fontSize: 13,
-    paddingLeft: 10, // Make it easier to tap
+    paddingLeft: 10, 
   },
   totalSummaryContainer: {
       flexDirection: 'row',
@@ -457,6 +458,7 @@ const styles = StyleSheet.create({
       fontSize: 10,
       color: Colors.light.muted,
       fontWeight: '600',
+      textTransform: 'uppercase' // Make it explicit that this is the grand total for the cart screen
   },
   proceedButton: {
     backgroundColor: Colors.light.tint,
@@ -466,7 +468,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    minWidth: 150, // Give button some width
+    minWidth: 150, 
   },
   proceedButtonLoading: {
       backgroundColor: Colors.light.muted, 
