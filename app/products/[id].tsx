@@ -9,16 +9,16 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    FlatList,
-    Image,
-    Platform,
-    Pressable,
-    ScrollView,
-    Share,
-    StyleSheet,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -130,7 +130,7 @@ export default function ProductDetailScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: themedBackgroundColor, flex:1 }]}>
         <ScrollView contentContainerStyle={styles.scrollContentContainerShimmer}>
           {/* Header Shimmer (Simplified) */}
-          <View style={[styles.header, dynamicStyles.header, {justifyContent: 'space-between', marginTop: Platform.OS === 'android' ? 10: 0 }]}>
+          <View style={[styles.header, dynamicStyles.header, {justifyContent: 'space-between', marginTop: Platform.OS === 'android' ? 0 : 0 }]}>
             <Pressable onPress={() => router.back()} style={styles.headerButton}>
               <Ionicons name="arrow-back" size={26} color={iconColor} />
             </Pressable>
