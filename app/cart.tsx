@@ -18,6 +18,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// FloatingCartView is NOT imported here as we are making the cart's own footer fixed.
+
 const DELIVERY_CHARGE_VALUE = 30;
 const HANDLING_CHARGE_VALUE = 9;
 const SMALL_CART_FEE_VALUE = 20;
@@ -25,7 +27,7 @@ const SMALL_CART_THRESHOLD = 100;
 
 export default function CartScreen() {
   const router = useRouter();
-  const { cart, updateItemQuantity, totalCartItems, totalCartPrice } = useCart(); // Removed clearCart as it's not used in this view now
+  const { cart, updateItemQuantity, totalCartItems, totalCartPrice } = useCart();
   const { isAuthenticated } = useAuth();
   const { address, isLoadingAddress } = useAddress();
 
@@ -33,7 +35,7 @@ export default function CartScreen() {
   const deliveryCharge = cart.length > 0 ? DELIVERY_CHARGE_VALUE : 0;
   const handlingCharge = cart.length > 0 ? HANDLING_CHARGE_VALUE : 0;
   const smallCartCharge = (cart.length > 0 && subTotal < SMALL_CART_THRESHOLD && subTotal > 0) ? SMALL_CART_FEE_VALUE : 0;
-  const savedAmount = 10; // Assuming this is a general saving
+  const savedAmount = 10; 
 
   const grandTotalCalculation = subTotal - savedAmount + deliveryCharge + handlingCharge + smallCartCharge;
 
@@ -58,7 +60,7 @@ export default function CartScreen() {
       proceedButtonText = 'Proceed To Pay';
     }
   }
-  if (isLoadingAddress && cart.length > 0) {
+  if (isLoadingAddress && cart.length > 0 && !address) { // Check if address is null explicitly
     proceedButtonText = 'Loading...';
   }
 
@@ -89,7 +91,7 @@ export default function CartScreen() {
     </View>
   );
 
-  if (isLoadingAddress && cart.length > 0 && !address) { // Show loading only if address is being fetched and not yet available
+  if (isLoadingAddress && cart.length > 0 && !address) { 
     return (
         <SafeAreaView style={[styles.container, styles.centeredLoadingContainer, {flex:1}]}>
             <ActivityIndicator size="large" color={Colors.light.tint} />
@@ -99,7 +101,7 @@ export default function CartScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, {flex:1}]}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.headerContainer}>
         <ThemedText style={styles.headerTitle}>My Cart</ThemedText>
@@ -184,44 +186,43 @@ export default function CartScreen() {
                     </Pressable>
               </View>
             </View>
-            {/* Footer section for proceed button, address etc. is now part of FloatingCartView or directly below for this page */}
-            <View style={styles.cartScreenFooterContainer}>
-                 {isAuthenticated && address && cart.length > 0 && (
-                    <View style={styles.deliveryAddressContainer}>
-                        <Ionicons name="location-outline" size={20} color={Colors.light.tint} />
-                        <ThemedText style={styles.deliveryAddressText} numberOfLines={1}>
-                            Delivering to <ThemedText style={{fontWeight: 'bold'}}>{address.addressType} - {address.houseNo}, {address.area.split(',')[0]}</ThemedText>
-                        </ThemedText>
-                        <Pressable onPress={() => router.push('/address' as any)}>
-                            <ThemedText style={styles.changeAddressButton}>Change</ThemedText>
-                        </Pressable>
-                    </View>
-                )}
-                <View style={styles.totalSummaryContainer}>
-                    <View style={styles.proceedPriceContainer}>
-                        <ThemedText style={styles.grandTotalFooterText}>₹{finalGrandTotal.toFixed(2)}</ThemedText>
-                        <ThemedText style={styles.proceedTotalLabel}>GRAND TOTAL</ThemedText>
-                    </View>
-                    <Pressable 
-                        style={[styles.proceedButton, (isLoadingAddress && cart.length > 0 && !address) && styles.proceedButtonLoading ]}
-                        onPress={handleProceed} 
-                        disabled={(isLoadingAddress && cart.length > 0 && !address) || cart.length === 0}
-                    >
-                        <ThemedText style={styles.proceedButtonText}>{proceedButtonText}</ThemedText>
-                        {!(isLoadingAddress && cart.length > 0 && !address) && cart.length > 0 && <Ionicons name="chevron-forward-outline" size={20} color={Colors.dark.text} style={{marginLeft: 5}} />}
-                    </Pressable>
-                </View>
-            </View>
+            {/* The ScrollView's content ends here. PaddingBottom in scrollContentContainerPadded will ensure space for the fixed footer. */}
+          </ScrollView> 
 
-          </ScrollView>
+          {/* Fixed Footer Section for Cart Screen */}
+          <View style={styles.cartScreenFixedFooterContainer}>
+               {isAuthenticated && address && cart.length > 0 && (
+                  <View style={styles.deliveryAddressContainer}>
+                      <Ionicons name="location-outline" size={20} color={Colors.light.tint} />
+                      <ThemedText style={styles.deliveryAddressText} numberOfLines={1}>
+                          Delivering to <ThemedText style={{fontWeight: 'bold'}}>{address.addressType} - {address.houseNo}, {address.area.split(',')[0]}</ThemedText>
+                      </ThemedText>
+                      <Pressable onPress={() => router.push('/address' as any)}>
+                          <ThemedText style={styles.changeAddressButton}>Change</ThemedText>
+                      </Pressable>
+                  </View>
+              )}
+              <View style={styles.totalSummaryContainer}>
+                  <View style={styles.proceedPriceContainer}>
+                      <ThemedText style={styles.grandTotalFooterText}>₹{finalGrandTotal.toFixed(2)}</ThemedText>
+                      <ThemedText style={styles.proceedTotalLabel}>GRAND TOTAL</ThemedText>
+                  </View>
+                  <Pressable 
+                      style={[styles.proceedButton, (isLoadingAddress && cart.length > 0 && !address) && styles.proceedButtonLoading ]}
+                      onPress={handleProceed} 
+                      disabled={(isLoadingAddress && cart.length > 0 && !address) || cart.length === 0}
+                  >
+                      <ThemedText style={styles.proceedButtonText}>{proceedButtonText}</ThemedText>
+                      {!(isLoadingAddress && cart.length > 0 && !address) && cart.length > 0 && <Ionicons name="chevron-forward-outline" size={20} color={Colors.dark.text} style={{marginLeft: 5}} />}
+                  </Pressable>
+              </View>
+          </View>
         </>
       )}
     </SafeAreaView>
   );
 }
 
-// Styles are largely the same, just removing footer specific styles that are now in FloatingCartView.tsx
-// and adding styles for the new cartScreenFooterContainer
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -243,7 +244,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: Colors.light.text },
   closeButton: { padding: 5 }, 
-  scrollContentContainerPadded: { paddingHorizontal: 15, paddingBottom: 20 }, 
+  // Adjusted paddingBottom to make space for the fixed footer
+  scrollContentContainerPadded: { paddingHorizontal: 15, paddingBottom: 150 }, // Increased from 20 to 150
   emptyCartContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -412,21 +414,33 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.tint,
     borderColor: Colors.light.tint,
   },
-  // Styles for the footer content that remains on the cart page itself
-  cartScreenFooterContainer: {
+  // Styles for the fixed footer specific to CartScreen
+  cartScreenFixedFooterContainer: {
+    position: 'absolute', // Fixed position
+    bottom: 0,            // At the bottom
+    left: 0,
+    right: 0,
     borderTopWidth: 1,
     borderTopColor: Colors.light.border,
     paddingHorizontal: 15,
     paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 25 : 12, 
     backgroundColor: Colors.light.background, 
+    zIndex: 1000, // Ensure it's on top
+    // Adding shadow similar to FloatingCartView for consistency
+    elevation: 10, 
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
+  // Copied from original cartScreenFooterContainer - these are now used by cartScreenFixedFooterContainer
   deliveryAddressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
     paddingBottom: 10,
-    borderBottomWidth: 1,
+    borderBottomWidth: 1, // This line can be optional if the footer has its own top border
     borderBottomColor: Colors.light.border,
   },
   deliveryAddressText: {
@@ -458,7 +472,7 @@ const styles = StyleSheet.create({
       fontSize: 10,
       color: Colors.light.muted,
       fontWeight: '600',
-      textTransform: 'uppercase' // Make it explicit that this is the grand total for the cart screen
+      textTransform: 'uppercase'
   },
   proceedButton: {
     backgroundColor: Colors.light.tint,
